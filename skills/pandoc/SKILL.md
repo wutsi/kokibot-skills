@@ -1,10 +1,6 @@
 ---
 name: pandoc
 description: This skill should be used when converting documents between formats (Markdown, DOCX, PDF, HTML, LaTeX, etc.) using pandoc. Use for format conversion, document generation, and preparing markdown for Google Docs or other word processors.
-requires:
-    bin:
-        - pandoc
-        - tectonic
 ---
 
 # Skill: pandoc
