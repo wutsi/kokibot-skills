@@ -1,6 +1,7 @@
 ---
 name: gog-cli
 description: Use this skill whenever the user wants to operate Google Workspace from the command line with gog/gogcli, including Gmail, Calendar, Drive, Docs, Sheets, Slides, Forms, Apps Script, Chat, Classroom, Contacts, Tasks, People, Groups, Admin, Keep, auth, configuration, scripting, or agent-safe Google automation. Prefer this skill for Google account/file/mail/calendar work when the user mentions gog, gogcli, Google CLI, Gmail search/send, Calendar events, Drive files, Docs/Sheets/Slides editing, Forms, Apps Script, Workspace admin, or command-line Google automation.
+source: https://github.com/intellectronica/agent-skills
 ---
 
 # gogcli (gog)
