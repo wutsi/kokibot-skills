@@ -1,13 +1,16 @@
 ---
 name: "design-md-generator"
 description: "Generates or updates a machine-readable design contract file (DESIGN.md) containing product UI specs, mandatory local brand assets (logos/backgrounds only), specialized social typography scales, and cross-channel social media templates."
-keywords: 
-  - design system
-  - DESIGN.md
-  - brand guidelines
-  - design tokens
-  - social media typography
-  - asset downloader
+metadata:
+  categories: 
+    - design
+  keywords: 
+    - design system
+    - DESIGN.md
+    - brand guidelines
+    - design tokens
+    - social media typography
+    - asset downloader
 ---
 
 # Skill: design-md-generator
