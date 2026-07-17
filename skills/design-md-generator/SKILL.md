@@ -18,20 +18,20 @@ metadata:
 This skill processes brand assets, websites, or visual instructions and codifies them into a highly structured `DESIGN.md` file. This file acts as a permanent, machine-readable visual contract for both engineering and content generation agents. Additionally, **it strictly mandates the local download and preservation of core visual assets** (logos, key backgrounds) to a dedicated assets directory, keeps code out of the assets directory, and defines an exact, highly legible typography matrix optimized for high-compression social media feeds.
 
 ## !!! SYSTEM CONSTRAINTS & TOOL RESTRICTIONS (READ FIRST) !!!
-*   **NEVER USE THE `web_fetch` TOOL:** Under no circumstances should you invoke `web_fetch` or any automated markdown-parsing web tools when a URL is provided[cite: 1]. 
-*   **MANDATORY ALTERNATIVE:** You must fetch raw website content or download assets exclusively by running `curl`, `wget`, or equivalent terminal commands inside your execution sandbox[cite: 1]. This task requires raw source material and binary asset streams which high-level fetch tools strip away or fail to save[cite: 1].
+*   **NEVER USE THE `web_fetch` TOOL:** Under no circumstances should you invoke `web_fetch` or any automated markdown-parsing web tools when a URL is provided. 
+*   **MANDATORY ALTERNATIVE:** You must fetch raw website content or download assets exclusively by running `curl`, `wget`, or equivalent terminal commands inside your execution sandbox. This task requires raw source material and binary asset streams which high-level fetch tools strip away or fail to save.
 
 ---
 
 ## 0. Trigger Conditions
 
 This skill is automatically triggered when the user expresses any of the following intents:
-*   **Design System Creation:** Requesting to build, define, initialize, or document a new design system, brand guidelines, or visual guidelines[cite: 1].
-*   **File Generation:** Explicitly asking to generate, write, update, or bootstrap a `DESIGN.md` file or its visual HTML preview[cite: 1].
-*   **Asset Codification & Localization:** Providing brand assets, colors, typography details, logo assets, or a website URL and wanting to download assets locally and transform them into a formal design contract[cite: 1].
-*   **Social & Layout Guidelines:** Requesting safe-zone standards, mobile layout parameters, or visual templates for cross-channel content[cite: 1].
+*   **Design System Creation:** Requesting to build, define, initialize, or document a new design system, brand guidelines, or visual guidelines.
+*   **File Generation:** Explicitly asking to generate, write, update, or bootstrap a `DESIGN.md` file or its visual HTML preview.
+*   **Asset Codification & Localization:** Providing brand assets, colors, typography details, logo assets, or a website URL and wanting to download assets locally and transform them into a formal design contract.
+*   **Social & Layout Guidelines:** Requesting safe-zone standards, mobile layout parameters, or visual templates for cross-channel content.
 
-*Keywords to listen for:* `create design system`, `generate DESIGN.md`, `brand guidelines`, `design tokens`, `visual contract`, `extract styles from website`, `generate design preview`, `download logo`, `save brand assets`, `social media typography`[cite: 1].
+*Keywords to listen for:* `create design system`, `generate DESIGN.md`, `brand guidelines`, `design tokens`, `visual contract`, `extract styles from website`, `generate design preview`, `download logo`, `save brand assets`, `social media typography`.
 
 ---
 
@@ -40,42 +40,42 @@ This skill is automatically triggered when the user expresses any of the followi
 When triggered, the agent must execute the following sequence:
 
 1. **Verify & Ingest Context**: 
-   * Check if a valid `brand_context` (text, guidelines, or URL) is provided[cite: 1].
-   * **If missing or blank:** Stop execution immediately[cite: 1]. Prompt the user: *"Please provide a website URL, brand guidelines, or a description of your brand assets so I can generate your DESIGN.md."*[cite: 1] Do not proceed to Step 2 until this context is supplied[cite: 1].
-   * **If a URL is provided:** Fetch the raw HTML using a low-level command like `curl` (remembering the absolute ban on the `web_fetch` tool)[cite: 1].
-     * *Single-Page Application (SPA) Fallback:* If the returned HTML is a minimal shell, scan the raw source code for linked `.css` assets, inline styles, asset paths, or Tailwind configurations to extract primary color tokens, typography scales, and layout aesthetics[cite: 1].
-   * **Identify Scope:** Assess whether social media guidelines or channels are mentioned in the source context[cite: 1]. If present, set `include_social` to `true` to trigger the social media frontmatter and markdown sections[cite: 1].
+   * Check if a valid `brand_context` (text, guidelines, or URL) is provided.
+   * **If missing or blank:** Stop execution immediately. Prompt the user: *"Please provide a website URL, brand guidelines, or a description of your brand assets so I can generate your DESIGN.md."* Do not proceed to Step 2 until this context is supplied.
+   * **If a URL is provided:** Fetch the raw HTML using a low-level command like `curl` (remembering the absolute ban on the `web_fetch` tool).
+     * *Single-Page Application (SPA) Fallback:* If the returned HTML is a minimal shell, scan the raw source code for linked `.css` assets, inline styles, asset paths, or Tailwind configurations to extract primary color tokens, typography scales, and layout aesthetics.
+   * **Identify Scope:** Assess whether social media guidelines or channels are mentioned in the source context. If present, set `include_social` to `true` to trigger the social media frontmatter and markdown sections.
 
 2. **Mandatory Asset Localization (Media Assets Only)**:
-   * Scan the raw HTML, input text, styling sheets, or context for references to the brand's primary assets (e.g., logo_primary, primary background/hero graphics, or favicons)[cite: 1].
-   * **Strict Blocking Guardrail:** At least one core visual asset (such as a primary logo) **must** be present or identified[cite: 1]. If no image URLs, SVGs, or local assets are found in the provided context, **stop execution immediately**[cite: 1]. Prompt the user: *"This skill requires at least one core visual asset (such as a primary logo image URL or SVG) to generate the visual contract. Please provide the asset details to continue."*[cite: 1]
-   * **Target Directory:** Create the destination directory: `$HOME/workspace/design/assets/` using a shell command (`mkdir -p`)[cite: 1].
-   * **Asset Isolation Constraint:** **Only binary or vector image assets explicitly referenced in the `DESIGN.md` (e.g., logo and background image assets) may be stored in the `/assets/` folder.**[cite: 1] Do not output external CSS stylesheets, JavaScript files, or HTML scripts into this directory[cite: 1]. All preview styling and scripting logic must reside inline within the HTML preview file[cite: 1].
-   * **Download Execution:** Save the identified binary or vector assets using a direct terminal command like `curl -L -o`[cite: 1].
-     * Clean and rename the files systematically (e.g., `logo_primary.png` or `logo_primary.svg`, `background_primary.jpg`)[cite: 1].
-   * **Update References:** Map these newly downloaded local relative paths (e.g., `./assets/logo_primary.png`) to the `brand.assets` keys in the YAML block[cite: 1]. *No external/remote image URLs are allowed to remain in the final document's assets section[cite: 1].*
+   * Scan the raw HTML, input text, styling sheets, or context for references to the brand's primary assets (e.g., logo_primary, primary background/hero graphics, or favicons).
+   * **Strict Blocking Guardrail:** At least one core visual asset (such as a primary logo) **must** be present or identified. If no image URLs, SVGs, or local assets are found in the provided context, **stop execution immediately**. Prompt the user: *"This skill requires at least one core visual asset (such as a primary logo image URL or SVG) to generate the visual contract. Please provide the asset details to continue."*
+   * **Target Directory:** Create the destination directory: `[home-directory]/workspace/design/assets/` using a shell command (`mkdir -p`).
+   * **Asset Isolation Constraint:** **Only binary or vector image assets explicitly referenced in the `DESIGN.md` (e.g., logo and background image assets) may be stored in the `/assets/` folder.** Do not output external CSS stylesheets, JavaScript files, or HTML scripts into this directory. All preview styling and scripting logic must reside inline within the HTML preview file.
+   * **Download Execution:** Save the identified binary or vector assets using a direct terminal command like `curl -L -o`.
+     * Clean and rename the files systematically (e.g., `logo_primary.png` or `logo_primary.svg`, `background_primary.jpg`).
+   * **Update References:** Map these newly downloaded local relative paths (e.g., `./assets/logo_primary.png`) to the `brand.assets` keys in the YAML block. *No external/remote image URLs are allowed to remain in the final document's assets section.*
 
 3. **Draft Token Block**: 
-   * Construct a valid semantic YAML frontmatter block mapping out `light` and `dark` themes, typography scales (including the specialized social typography tokens), layout spacing, localized asset paths, and conditional social media specs[cite: 1].
-   * **Dynamic Versioning:** If a `DESIGN.md` already exists, read its current version[cite: 1]. If the existing file's frontmatter is unreadable, corrupt, or missing, fallback to defaulting to `1.0.0`[cite: 1]. Increment the patch version (e.g., `1.1.0` to `1.1.1`) for minor token adjustments, or the minor version (e.g., `1.1.0` to `1.2.0`) if new layout rules, local assets, or social platforms are added[cite: 1].
+   * Construct a valid semantic YAML frontmatter block mapping out `light` and `dark` themes, typography scales (including the specialized social typography tokens), layout spacing, localized asset paths, and conditional social media specs.
+   * **Dynamic Versioning:** If a `DESIGN.md` already exists, read its current version. If the existing file's frontmatter is unreadable, corrupt, or missing, fallback to defaulting to `1.0.0`. Increment the patch version (e.g., `1.1.0` to `1.1.1`) for minor token adjustments, or the minor version (e.g., `1.1.0` to `1.2.0`) if new layout rules, local assets, or social platforms are added.
 
-4. **Write System Guidelines**: Below the frontmatter, write the human-readable Markdown guidelines covering Visual Vibe, UI Components, Theme Transitions, and Social Media Guardrails (fully detailed with the new typography rules)[cite: 1].
+4. **Write System Guidelines**: Below the frontmatter, write the human-readable Markdown guidelines covering Visual Vibe, UI Components, Theme Transitions, and Social Media Guardrails (fully detailed with the new typography rules).
 
-5. **Draft HTML Preview Page**: Generate an interactive, highly polished, self-contained `preview.html` file using the newly generated design tokens and localized assets[cite: 1]. 
+5. **Draft HTML Preview Page**: Generate an interactive, highly polished, self-contained `preview.html` file using the newly generated design tokens and localized assets. 
    * **The preview file must include:**
-     * A CSS block injecting the light and dark tokens as native CSS custom properties (`--color-bg`, `--color-text`, etc.)[cite: 1].
-     * References to the localized media assets in `$HOME/workspace/design/assets/` (e.g., displaying the downloaded logo)[cite: 1].
-     * **Embedded Code Constraint:** All CSS layout declarations, theme toggle logic, and preview interactions must be written directly inline (within `<style>` and `<script>` blocks) inside `preview.html`[cite: 1]. No styles or interactive scripts should be compiled into external `.css` or `.js` files inside `/assets/`[cite: 1].
-     * A real-time Light/Dark theme toggle control[cite: 1].
-     * Visual swatches showing the active color palette[cite: 1].
+     * A CSS block injecting the light and dark tokens as native CSS custom properties (`--color-bg`, `--color-text`, etc.).
+     * References to the localized media assets in `[home-directory]/workspace/design/assets/` (e.g., displaying the downloaded logo).
+     * **Embedded Code Constraint:** All CSS layout declarations, theme toggle logic, and preview interactions must be written directly inline (within `<style>` and `<script>` blocks) inside `preview.html`. No styles or interactive scripts should be compiled into external `.css` or `.js` files inside `/assets/`.
+     * A real-time Light/Dark theme toggle control.
+     * Visual swatches showing the active color palette.
      * Typography scale layout showcasing UI scales side-by-side with the new **Social Typography Scale** (Hero, Headline, Subhead, and Micro-Meta) to visually validate legibility.
-     * Rendered interactive components (Buttons with hover states, Cards, and layout spacing grid indicators)[cite: 1].
-     * Interactive social media layout canvas simulator showing the visual safe-zone overlay boxes based on the spacing rules defined in the system[cite: 1].
-     * **Bulletproof Icon Architecture:** To prevent broken, missing, or blocked icons, do not use external icon fonts (such as FontAwesome)[cite: 1]. Instead, use inline SVGs or the Lucide CDN script link `<script src="https://unpkg.com/lucide@latest"></script>` resolved via `lucide.createIcons();` at the end of the page[cite: 1].
+     * Rendered interactive components (Buttons with hover states, Cards, and layout spacing grid indicators).
+     * Interactive social media layout canvas simulator showing the visual safe-zone overlay boxes based on the spacing rules defined in the system.
+     * **Bulletproof Icon Architecture:** To prevent broken, missing, or blocked icons, do not use external icon fonts (such as FontAwesome). Instead, use inline SVGs or the Lucide CDN script link `<script src="https://unpkg.com/lucide@latest"></script>` resolved via `lucide.createIcons();` at the end of the page.
 
 6. **File Generation (Instant Write & Overwrite)**: 
-   * **Backup Strategy:** If a `DESIGN.md` already exists, immediately copy it to the backup directory: `$HOME/workspace/design/bak/yyyy/MM/dd/DESIGN-HHmm.md` (substituting actual system date and time values)[cite: 1].
-   * **Direct Write:** Proceed to write/overwrite the updated files directly to `$HOME/workspace/design/DESIGN.md` and `$HOME/workspace/design/preview.html`[cite: 1].
+   * **Backup Strategy:** If a `DESIGN.md` already exists, immediately copy it to the backup directory: `[home-directory]/workspace/design/bak/yyyy/MM/dd/DESIGN-HHmm.md` (substituting actual system date and time values).
+   * **Direct Write:** Proceed to write/overwrite the updated files directly to `[home-directory]/workspace/design/DESIGN.md` and `[home-directory]/workspace/design/preview.html`.
 
 ---
 
