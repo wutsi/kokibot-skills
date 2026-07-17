@@ -1,14 +1,15 @@
 ---
 name: "social-media-content-generator"
 description: "Ingests a machine-readable DESIGN.md, processes an immutable text content payload with optional slide-specific background images, and programmatically generates pixel-perfect, consistently branded social media graphics using Playwright."
-keywords: 
-  - social media automation
-  - playwright
-  - browser automation
-  - image generator
-  - automation pipeline
-  - content generation
-  - background images
+metadata:
+  keywords: 
+    - social media automation
+    - playwright
+    - browser automation
+    - image generator
+    - automation pipeline
+    - content generation
+    - background images
 ---
 
 # Skill: social-media-content-generator
