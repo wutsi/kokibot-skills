@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that output a JSON payload containing the absolute full file paths of created assets.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that output a plain-text summary list containing the absolute full file paths of created assets.
 metadata:
     categories:
         - design
@@ -13,25 +13,22 @@ metadata:
 This skill automates the creation of high-quality, platform-specific social media post images and multi-slide carousels.
 By reading a central design system, staging provided background images into the local execution workspace, injecting
 user-provided copy into HTML slide configurations based on platform specifications, and executing the renders via a
-Node.js Playwright loop, this skill outputs a JSON object containing the absolute full file system paths of all
-generated visual assets ready for immediate system consumption.
+Node.js Playwright loop, this skill outputs a plain-text list containing the absolute full file system paths of all
+generated visual assets.
 
 ---
 
 ## Output Contract & Location Reporting
 
-The primary deliverable of this skill is a JSON payload listing the absolute full paths to all rendered image assets.
+The primary deliverable of this skill is a plain-text summary listing the absolute full paths to all rendered image
+assets.
 
-### JSON Output Structure
+### Text Output Structure
 
-```json
-{
-    "images": [
-        "[full-path-image-slide-1]",
-        "[full-path-image-slide-2]",
-        ...
-    ]
-}
+```text
+n asset(s) generated:
+- /Users/username/project/output/asset_[UniqueId]/slide_1.png
+- /Users/username/project/output/asset_[UniqueId]/slide_2.png
 ```
 
 Downstream agent scripts and platform wrappers must parse `stdout` for the printed file path location to locate,
@@ -292,11 +289,8 @@ const path = require('path');
 
   await browser.close();
 
-  // Output clean JSON containing absolute full image paths
-  const resultJson = {
-    images: generatedFiles
-  };
-
-  console.log(JSON.stringify(resultJson, null, 2));
+  // Output plain text summary list containing absolute full image paths
+  console.log(`${generatedFiles.length} asset(s) generated:`);
+  generatedFiles.forEach(filePath => console.log(`- ${filePath}`));
 })();
 ```
