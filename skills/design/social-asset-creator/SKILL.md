@@ -1,9 +1,12 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images by generating a self-contained Playwright automation script.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images by generating a self-contained Python Playwright automation script with high-impact typography.
 metadata:
     categories:
         - design
+    system_requirements:
+        - "Requires 'playwright' package installed in the runner environment (pip install playwright)"
+        - "Requires browser binaries installed via 'playwright install chromium'"
 ---
 
 # Skill Instruction: Social Media Post Image Generation
@@ -12,8 +15,8 @@ metadata:
 
 This skill automates the creation of high-quality, platform-specific social media post images. By reading a central
 design system, dynamically injecting user-provided copy and assets into an HTML string based on the platform
-specifications, and wrapping it in an executable Playwright script, this skill outputs a fully automated rendering
-blueprint ready for immediate system execution.
+specifications, and wrapping it in an executable Python script, this skill outputs a fully automated rendering blueprint
+ready for immediate system execution.
 
 ---
 
@@ -23,13 +26,11 @@ Trigger this skill whenever you need to generate high-fidelity, text-on-image ma
 preserving strict brand identity.
 
 * **Multi-Platform Visual Distribution:** When the same copy and background asset need to be adapted perfectly into
-  multiple aspect ratios (e.g., matching Instagram Stories, LinkedIn Feed posts, and YouTube Community updates
-  simultaneously) without manual cropping.
+  multiple aspect ratios simultaneously without manual cropping.
 * **Text-Heavy Image Creative Creation:** For programmatic ad graphics, content hooks, promotional graphics, and
   typographic quote cards where pixel-perfect font alignment and dynamic word wrapping are required.
 * **Brand Asset Compliance Protection:** When rendering graphics at scale where traditional generative AI image
-  generation models (like DALL-E or Midjourney) fail due to layout hallucination, misspelled text overlays, or
-  non-compliant font usage.
+  generation models fail due to layout hallucination, misspelled text overlays, or non-compliant font usage.
 
 ---
 
@@ -103,6 +104,27 @@ The container bounds and dimensions must be dynamically determined using the mat
 
 ---
 
+## Typography & Font Scale Guidelines
+
+To stand out on small mobile feeds, typography must be aggressively scaled, hyper-legible, and weighted. Traditional
+document sizes (e.g., 16px, 24px) are strictly forbidden. Use the following baseline hierarchy, adjusting via fluid CSS
+`vw`/`vh` units or specific target pixels based on a baseline canvas height of **1350px**:
+
+* **Hook (Pattern Interrupter):** **`72px - 96px`** (`font-weight: 800` or `900`). Must be highly stylized, uppercase,
+  or use high-contrast background badges to visually anchor the user's attention instantly.
+* **Headline (Core Value Prop):** **`64px - 80px`** (`font-weight: 700`). Clear, bold, and heavily structured. This
+  block drives the main content delivery.
+* **Sub Head (Supporting Detail):** **`36px - 48px`** (`font-weight: 500` or `400`). Sized layout-defensively to handle
+  up to 2-3 lines of explanatory copy without losing scanning hierarchy.
+* **CTA (Call to Action Button):** **`32px - 40px`** (`font-weight: 700`). Housed inside a defined, pill-shaped or
+  rounded button layout with generous padding (`24px 48px`) to look mimic an interactive element.
+
+> **Scale Factor Note:** If the target resolution is scaled lower (e.g., a 720p YouTube Thumbnail), scale all absolute
+> pixel ranges down proportionally using a multiplier (e.g., `Target Height / 1350`) to keep the exact visual layout
+> balance.
+
+---
+
 ## Execution Protocol
 
 Execute these actions in strict sequential order. Do not loop or re-draft code once generated.
@@ -116,6 +138,8 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
 ### Step 2: Compile the Asset HTML & CSS
 
 * Dynamically compile a single self-contained HTML payload containing all structure and explicit inline CSS.
+* **Typography Calculations:** Map the text variables to the precise scales outlined in **Typography & Font Scale
+  Guidelines**, translating the pixel boundaries into layout-safe styles using fluid ranges or relative scale math.
 * **Strict Content Mapping (No Assumptions):** Map the provided values (`Hook`, `Headline`, `Sub Head`, `CTA`,
   `Background Image`) to their respective text blocks. Do **not** generate placeholder text or hallucinate content for
   omitted optional parameters. Completely hide or exclude empty parameter elements from the DOM so they occupy zero
@@ -126,57 +150,58 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
   Force dynamic truncation using line-clamping CSS (e.g., `-webkit-line-clamp: 3;`) on headers to guarantee text cannot
   break or expand past the canvas boundaries. Ensure `box-sizing: border-box;` is applied globally.
 
-### Step 3: Integrate into Playwright Script Engine
+### Step 3: Integrate into Playwright Python Script
 
-* Embed the complete HTML code generated in Step 2 directly into an executable Node.js Playwright script template.
+* Embed the complete HTML code generated in Step 2 directly into an executable Python Playwright script template using
+  multi-line triple quotes (`"""`).
 * Dynamically inject the calculated pixel `width` and `height` properties extracted from the specifications matrix
-  directly into the script's browser viewport configuration object.
+  directly into the script's browser viewport configuration dictionary.
 * Configure a defensive network lifecycle event (`networkidle`) right after setting page content to ensure external
   brand web-fonts or network images load fully prior to snapshot creation.
 
 ### Step 4: Output Execution Payload
 
-* Deliver the output by generating the exact JavaScript code block structure detailed below. Do not append
-  conversational chat text, instructions, or follow-up questions after outputting this block. Stop generating
-  immediately.
+* Deliver the output by generating the exact Python code block structure detailed below. Do not append conversational
+  chat text, instructions, or follow-up questions after outputting this block. Stop generating immediately.
 
-```javascript
-const { chromium } = require('playwright');
-const fs = require('fs');
+```python
+import os
+from playwright.sync_api import sync_playwright
 
-(async () => {
-  // Target Specification: [Insert Target Platform] - [Insert Placement Type]
-  const width = [Insert Evaluated Width];
-  const height = [Insert Evaluated Height];
-  const outputPath = 'output/asset_[UniqueId].png';
+# Target Specification: [Insert Target Platform] - [Insert Placement Type]
+width = [Insert Evaluated Width]
+height = [Insert Evaluated Height]
+output_path = "output/asset_[UniqueId].png"
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ viewport: { width, height } });
-  const page = await context.newPage();
+# Self-contained compiled HTML payload string
+html_content = """
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    /* Compiled brand system CSS goes here */
+  </style>
+</head>
+<body>
+  <!-- Compliant structured visual content goes here -->
+</body>
+</html>
+"""
 
-  // Self-contained compiled HTML payload string
-  const htmlContent = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <style>
-      /* Compiled brand system CSS goes here */
-    </style>
-  </head>
-  <body>
-    <!-- Compliant structured visual content goes here -->
-  </body>
-  </html>
-  `;
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    context = browser.new_context(viewport={"width": int(width), "height": int(height)})
+    page = context.new_page()
 
-  await page.setContent(htmlContent);
-  await page.waitForLoadState('networkidle');
+    page.set_content(html_content)
+    page.wait_for_load_state("networkidle")
 
-  // Ensure target folder space path exists
-  if (!fs.existsSync('output')) fs.mkdirSync('output', { recursive: true });
+    # Ensure target output directory exists
+    output_dir = os.path.dirname(output_path)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-  await page.screenshot({ path: outputPath, type: 'png' });
-  await browser.close();
+    page.screenshot(path=output_path, type="png")
+    browser.close()
 
-  console.log(`Asset generated: ${outputPath}`);
-})();
+    print(f"Asset generated: {output_path}")
