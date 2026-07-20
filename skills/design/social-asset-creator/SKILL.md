@@ -136,14 +136,23 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
 ### Step 2: Compile the Asset HTML & CSS
 
 * Dynamically compile a single self-contained HTML payload containing all structure and explicit inline CSS.
+
 * **Typography Calculations:** Map the text variables to the precise scales outlined in **Typography & Font Scale
   Guidelines**, translating the pixel boundaries into layout-safe styles using fluid ranges or relative scale math.
+
 * **Strict Content Mapping (No Assumptions):** Map the provided values (`Hook`, `Headline`, `Sub Head`, `CTA`,
   `Background Image`) to their respective text blocks. Do **not** generate placeholder text or hallucinate content for
   omitted optional parameters. Completely hide or exclude empty parameter elements from the DOM so they occupy zero
   space.
+
+* **Image & Canvas Asset Handling:** Set `box-sizing: border-box;` globally on all elements. Ensure parent canvas
+  containers strictly enforce `overflow: hidden;`. Apply the `Path to background image` asset as a CSS background
+  property configured with `background-size: cover;` and `background-position: center;`. If a local file path is
+  provided, ensure it is formatted as an absolute filesystem path utilizing the valid URL file structure (`file://`).
+
 * **Safe Zone Enforcement:** For 9:16 formats (`story`, `reel_cover`), wrap all copy within an overlay container
   structurally constrained to the central 1080 x 1350 px visual bounding box using padding or flex alignment rules.
+
 * **Defensive Layout Constraints:** Apply `word-wrap: break-word;` and `overflow-wrap: break-word;` to all text boxes.
   Force dynamic truncation using line-clamping CSS (e.g., `-webkit-line-clamp: 3;`) on headers to guarantee text cannot
   break or expand past the canvas boundaries. Ensure `box-sizing: border-box;` is applied globally.
