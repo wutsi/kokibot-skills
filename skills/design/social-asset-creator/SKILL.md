@@ -1,12 +1,9 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images by generating a self-contained Python Playwright automation script with high-impact typography.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube using HTML/CSS templates rendered via a headless browser.
 metadata:
     categories:
         - design
-    system_requirements:
-        - "Requires 'playwright' package installed in the runner environment (pip install playwright)"
-        - "Requires browser binaries installed via 'playwright install chromium'"
 ---
 
 # Skill Instruction: Social Media Post Image Generation
@@ -15,8 +12,8 @@ metadata:
 
 This skill automates the creation of high-quality, platform-specific social media post images. By reading a central
 design system, dynamically injecting user-provided copy and assets into an HTML string based on the platform
-specifications, and wrapping it in an executable Python script, this skill outputs a fully automated rendering blueprint
-ready for immediate system execution.
+specifications, and wrapping it in an executable Node.js script, this skill outputs a fully automated rendering
+blueprint ready for immediate system execution.
 
 ---
 
@@ -64,7 +61,8 @@ matrix below.
 The container bounds and dimensions must be dynamically determined using the matrix below.
 
 > **Important (Safe Zones):** For all vertical video formats (`story` and `reel_cover`), the template must center text
-> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by native
+> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by
+> native
 > social media app UI elements (like profiles, captions, or interactable buttons).
 
 ### 1. Instagram (`instagram`)
@@ -117,7 +115,7 @@ document sizes (e.g., 16px, 24px) are strictly forbidden. Use the following base
 * **Sub Head (Supporting Detail):** **`36px - 48px`** (`font-weight: 500` or `400`). Sized layout-defensively to handle
   up to 2-3 lines of explanatory copy without losing scanning hierarchy.
 * **CTA (Call to Action Button):** **`32px - 40px`** (`font-weight: 700`). Housed inside a defined, pill-shaped or
-  rounded button layout with generous padding (`24px 48px`) to look mimic an interactive element.
+  rounded button layout with generous padding (`24px 48px`) to mimic an interactive element.
 
 > **Scale Factor Note:** If the target resolution is scaled lower (e.g., a 720p YouTube Thumbnail), scale all absolute
 > pixel ranges down proportionally using a multiplier (e.g., `Target Height / 1350`) to keep the exact visual layout
@@ -150,58 +148,61 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
   Force dynamic truncation using line-clamping CSS (e.g., `-webkit-line-clamp: 3;`) on headers to guarantee text cannot
   break or expand past the canvas boundaries. Ensure `box-sizing: border-box;` is applied globally.
 
-### Step 3: Integrate into Playwright Python Script
+### Step 3: Integrate into Playwright Node.js Script
 
-* Embed the complete HTML code generated in Step 2 directly into an executable Python Playwright script template using
-  multi-line triple quotes (`"""`).
+* Embed the complete HTML code generated in Step 2 directly into an executable Node.js Playwright script template.
 * Dynamically inject the calculated pixel `width` and `height` properties extracted from the specifications matrix
-  directly into the script's browser viewport configuration dictionary.
+  directly into the script's browser viewport configuration object.
 * Configure a defensive network lifecycle event (`networkidle`) right after setting page content to ensure external
   brand web-fonts or network images load fully prior to snapshot creation.
 
 ### Step 4: Output Execution Payload
 
-* Deliver the output by generating the exact Python code block structure detailed below. Do not append conversational
-  chat text, instructions, or follow-up questions after outputting this block. Stop generating immediately.
+* Deliver the output by generating the exact JavaScript code block structure detailed below. Do not append
+  conversational chat text, instructions, or follow-up questions after outputting this block. Stop generating
+  immediately.
 
-```python
-import os
-from playwright.sync_api import sync_playwright
+```javascript
+const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
 
-# Target Specification: [Insert Target Platform] - [Insert Placement Type]
-width = [Insert Evaluated Width]
-height = [Insert Evaluated Height]
-output_path = "output/asset_[UniqueId].png"
+(async () => {
+  // Target Specification: [Insert Target Platform] - [Insert Placement Type]
+  const width = [Insert Evaluated Width];
+  const height = [Insert Evaluated Height];
+  const outputPath = 'output/asset_[UniqueId].png';
 
-# Self-contained compiled HTML payload string
-html_content = """
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    /* Compiled brand system CSS goes here */
-  </style>
-</head>
-<body>
-  <!-- Compliant structured visual content goes here -->
-</body>
-</html>
-"""
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width, height } });
+  const page = await context.newPage();
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    context = browser.new_context(viewport={"width": int(width), "height": int(height)})
-    page = context.new_page()
+  // Self-contained compiled HTML payload string
+  const htmlContent = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      /* Compiled brand system CSS goes here */
+    </style>
+  </head>
+  <body>
+    <!-- Compliant structured visual content goes here -->
+  </body>
+  </html>
+  `;
 
-    page.set_content(html_content)
-    page.wait_for_load_state("networkidle")
+  await page.setContent(htmlContent);
+  await page.waitForLoadState('networkidle');
 
-    # Ensure target output directory exists
-    output_dir = os.path.dirname(output_path)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+  // Ensure target output directory exists
+  const dir = path.dirname(outputPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 
-    page.screenshot(path=output_path, type="png")
-    browser.close()
+  await page.screenshot({ path: outputPath, type: 'png' });
+  await browser.close();
 
-    print(f"Asset generated: {output_path}")
+  console.log(`Asset generated: ${outputPath}`);
+})();
