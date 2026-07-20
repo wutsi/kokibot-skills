@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that output a plain-text summary list containing the absolute full file paths of created assets.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by executing Playwright CLI commands that output a plain-text summary list containing the absolute full file paths of created assets.
 metadata:
     categories:
         - design
@@ -12,8 +12,9 @@ metadata:
 
 This skill automates the creation of high-quality, platform-specific social media post images and multi-slide carousels.
 By reading a central design system, staging provided background images into the local execution workspace, injecting
-user-provided copy into HTML slide configurations based on platform specifications, and executing the renders via a
-Node.js Playwright loop, this skill outputs a plain-text list containing the absolute full file system paths of all
+user-provided copy into HTML slide configurations based on platform specifications, and executing the renders via the
+**Playwright CLI (`playwright-cli`)**, this skill outputs a plain-text list containing the absolute full file system
+paths of all
 generated visual assets.
 
 ---
@@ -146,6 +147,19 @@ specific target pixels based on a baseline canvas height of **1350px**:
 
 Execute these actions in strict sequential order. Do not loop or re-draft code once generated.
 
+### Step 0: Environment Pre-Check (Dependency Validation)
+
+Before generating templates or staging assets, verify that playwright-cli is installed and accessible in the system
+environment. If the binary is missing, immediately halt execution and print an explicit error message.
+
+```markdown
+if ! command -v playwright-cli &> /dev/null; then
+echo "Error: playwright-cli is not installed or not found in PATH." >&2
+echo "Please install Playwright CLI before running this skill (e.g., npm install -g @playwright/cli@latest)." >&2
+exit 1
+fi
+```
+
 ### Step 1: Read Design System
 
 * Access and parse the central design system configuration file.
@@ -177,120 +191,23 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
 * Do not append conversational chat text, instructions, or follow-up questions after outputting this block. Stop
   generating immediately.
 
-```javascript
-const { chromium } = require('playwright');
-const fs = require('fs');
-const path = require('path');
+```bash
+# 1. Open the first slide template file in Playwright CLI
+playwright-cli open file://$(pwd)/output/asset_[UniqueId]/temp_slide_1.html
 
-(async () => {
-  // Target Specification: [Insert Target Platform] - [Insert Placement Type]
-  const width = [Insert Evaluated Width];
-  const height = [Insert Evaluated Height];
-  const uniqueId = '[UniqueId]';
+# 2. Resize viewport to match target platform dimensions (e.g., width x height)
+playwright-cli resize [Insert Evaluated Width] [Insert Evaluated Height]
 
-  // Raw slides data array structured directly from the user's input parameters
-  const slidesData = [
-    {
-      hook: "[Insert Hook Text]",
-      headline: "[Insert Headline Text or empty string]",
-      subHead: "[Insert Sub Head Text or empty string]",
-      cta: "[Insert CTA Text or empty string]",
-      bgPath: "[Insert Path to background image or empty string]"
-    }
-  ];
+# 3. Take screenshot and save to final absolute asset path
+playwright-cli screenshot --filename=$(pwd)/output/asset_[UniqueId]/slide_1.png
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ viewport: { width, height } });
-  const page = await context.newPage();
+# 4. Close session when finished or move to next tab/file
+playwright-cli close
 
-  // Ensure target output directory space exists and resolve full absolute path
-  const outputDir = path.resolve('output', `asset_${uniqueId}`);
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
+# Repeat for subsequent slides as necessary, then clean up temporary HTML files:
+rm $(pwd)/output/asset_[UniqueId]/temp_slide_*.html
 
-  const generatedFiles = [];
-
-  // Sequentially process and capture every slide image asset in the payload
-  for (let i = 0; i < slidesData.length; i++) {
-    const slide = slidesData[i];
-    const fileName = `slide_${i + 1}.png`;
-    const fullOutputPath = path.join(outputDir, fileName);
-
-    // Process and copy background images directly to the working workspace directory
-    let bgStyle = '';
-    if (slide.bgPath) {
-      try {
-        if (slide.bgPath.startsWith('http://') || slide.bgPath.startsWith('https://')) {
-          // Keep web URL paths intact
-          bgStyle = `background-image: url("${slide.bgPath}");`;
-        } else {
-          // Resolve relative or absolute local files
-          const sourcePath = path.resolve(__dirname, slide.bgPath);
-          if (fs.existsSync(sourcePath)) {
-            const bgFileName = `bg_slide_${i + 1}${path.extname(sourcePath)}`;
-            const targetCopyPath = path.join(outputDir, bgFileName);
-
-            // Copy background image asset directly into the workspace working directory
-            fs.copyFileSync(sourcePath, targetCopyPath);
-
-            // Reference the image using a local relative path with no file:// prefix
-            bgStyle = `background-image: url("${bgFileName}");`;
-          }
-        }
-      } catch (err) {
-        console.error(`Warning: Failed to process background image path: ${slide.bgPath}`, err);
-      }
-    }
-
-    // Dynamic self-contained HTML layout generation with embedded asset content
-    const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-          width: ${width}px;
-          height: ${height}px;
-          overflow: hidden;
-          font-family: sans-serif; /* Fallback brand font context here */
-          ${bgStyle}
-          background-size: cover;
-          background-position: center;
-        }
-        /* Extra structural styling rules map directly here */
-      </style>
-    </head>
-    <body>
-      <div class="canvas-container">
-        ${slide.hook ? `<div class="hook">${slide.hook}</div>` : ''}
-        ${slide.headline ? `<div class="headline">${slide.headline}</div>` : ''}
-        ${slide.subHead ? `<div class="sub-head">${slide.subHead}</div>` : ''}
-        ${slide.cta ? `<div class="cta-button">${slide.cta}</div>` : ''}
-      </div>
-    </body>
-    </html>
-    `;
-
-    // Write a temporary HTML file in the target workspace so relative background paths resolve cleanly
-    const tempHtmlPath = path.join(outputDir, `temp_slide_${i + 1}.html`);
-    fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
-
-    await page.goto(`file://${tempHtmlPath}`);
-    await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: fullOutputPath, type: 'png' });
-
-    generatedFiles.push(fullOutputPath);
-
-    // Clean up temporary HTML template footprint
-    try { fs.unlinkSync(tempHtmlPath); } catch {}
-  }
-
-  await browser.close();
-
-  // Output plain text summary list containing absolute full image paths
-  console.log(`${generatedFiles.length} asset(s) generated:`);
-  generatedFiles.forEach(filePath => console.log(`- ${filePath}`));
-})();
+# Output plain text summary list containing absolute full image paths
+echo "n asset(s) generated:"
+echo "- $(pwd)/output/asset_[UniqueId]/slide_1.png"
 ```
