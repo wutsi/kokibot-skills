@@ -4,11 +4,13 @@ description: Process and manipulate images using ImageMagick. Supports resizing,
 compatibility: Requires ImageMagick installed and available as `magick` on PATH. Cross-platform examples provided for PowerShell (Windows) and Bash (Linux/macOS).
 source: https://github.com/github/awesome-copilot/tree/main/skills/image-manipulation-image-magick
 metadata:
-  categories: 
-    - design
+    categories:
+        - design
 ---
 
 # Image Manipulation with ImageMagick
+
+## Overview
 
 This skill enables image processing and manipulation tasks using ImageMagick
 across Windows, Linux, and macOS systems.
@@ -56,6 +58,7 @@ Use this skill when you need to:
 ### Example 0: Resolve `magick` executable
 
 **PowerShell (Windows):**
+
 ```powershell
 # Prefer ImageMagick on PATH
 $magick = (Get-Command magick -ErrorAction SilentlyContinue)?.Source
@@ -72,6 +75,7 @@ if (-not $magick) {
 ```
 
 **Bash (Linux/macOS):**
+
 ```bash
 # Check if magick is available on PATH
 if ! command -v magick &> /dev/null; then
@@ -85,18 +89,20 @@ fi
 ### Example 1: Get Image Dimensions
 
 **PowerShell (Windows):**
+
 ```powershell
 # For a single image
 & $magick identify -format "%wx%h" path/to/image.jpg
 
 # For multiple images
-Get-ChildItem "path/to/images/*" | ForEach-Object { 
+Get-ChildItem "path/to/images/*" | ForEach-Object {
     $dimensions = & $magick identify -format "%f: %wx%h`n" $_.FullName
-    Write-Host $dimensions 
+    Write-Host $dimensions
 }
 ```
 
 **Bash (Linux/macOS):**
+
 ```bash
 # For a single image
 magick identify -format "%wx%h" path/to/image.jpg
@@ -110,17 +116,19 @@ done
 ### Example 2: Resize Images
 
 **PowerShell (Windows):**
+
 ```powershell
 # Resize a single image
 & $magick input.jpg -resize 427x240 output.jpg
 
 # Batch resize images
-Get-ChildItem "path/to/images/*" | ForEach-Object { 
+Get-ChildItem "path/to/images/*" | ForEach-Object {
     & $magick $_.FullName -resize 427x240 "path/to/output/thumb_$($_.Name)"
 }
 ```
 
 **Bash (Linux/macOS):**
+
 ```bash
 # Resize a single image
 magick input.jpg -resize 427x240 output.jpg
@@ -135,12 +143,14 @@ done
 ### Example 3: Get Detailed Image Information
 
 **PowerShell (Windows):**
+
 ```powershell
 # Get verbose information about an image
 & $magick identify -verbose path/to/image.jpg
 ```
 
 **Bash (Linux/macOS):**
+
 ```bash
 # Get verbose information about an image
 magick identify -verbose path/to/image.jpg
@@ -149,8 +159,9 @@ magick identify -verbose path/to/image.jpg
 ### Example 4: Process Images Based on Dimensions
 
 **PowerShell (Windows):**
+
 ```powershell
-Get-ChildItem "path/to/images/*" | ForEach-Object { 
+Get-ChildItem "path/to/images/*" | ForEach-Object {
     $dimensions = & $magick identify -format "%w,%h" $_.FullName
     if ($dimensions) {
         $width,$height = $dimensions -split ','
@@ -163,6 +174,7 @@ Get-ChildItem "path/to/images/*" | ForEach-Object {
 ```
 
 **Bash (Linux/macOS):**
+
 ```bash
 for img in path/to/images/*; do
     dimensions=$(magick identify -format "%w,%h" "$img")

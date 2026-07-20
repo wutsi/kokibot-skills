@@ -1,12 +1,12 @@
 ---
-name: "design-md-generator"
+name: "design-md-creator"
 description: "Generates or updates a machine-readable design contract file (DESIGN.md) containing product UI specs, mandatory local brand assets (logos/backgrounds only), specialized social typography scales, and cross-channel social media templates."
 metadata:
     categories:
         - design
 ---
 
-# Skill: design-md-generator
+# Skill: design-md-creator
 
 ## Overview
 
@@ -20,7 +20,7 @@ tokens using a hybrid YAML/Markdown structure.
 
 ---
 
-## When to Use
+## When to Use This Skill
 
 This skill is automatically triggered when the system detects any of the following user actions or inputs:
 
