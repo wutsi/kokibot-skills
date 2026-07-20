@@ -72,10 +72,6 @@ the section entirely. The parsed output sequence must strictly be:
 
 ## Operational Execution Loop
 
-```
-[Context Ingestion] -> [Read Existing File at Path] -> [Extract Intent & Bump Version] -> [Build YAML Tokens] -> [Generate Markdown Prose] -> [Validate & Save to Path]
-```
-
 ### Step 1: Context Ingestion
 
 Before writing or modifying any token configurations, the agent must inspect the working environment and extract active
@@ -235,17 +231,6 @@ Primary call-to-actions adapt full background fills inherited from structural to
 - Do maintain WCAG AA contrast ratios (4.5:1 for standard body text variations).
 - Do use the primary highlight exclusively for major user actions.
 - Don't mix sharp elements and organic heavy corner behaviors within a single screen.
-```
-
----
-
-## Validation Protocol
-
-Immediately following document generation, validity must be verified by invoking the official Google Labs parser tool
-locally via the CLI shell:
-
-```bash
-npx -y @google/design.md lint [home-directory]/DESIGN.md
 ```
 
 ### Error Mitigation Tree
