@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that handle images via base64 encoding.
 metadata:
     categories:
         - design
@@ -11,9 +11,10 @@ metadata:
 ## Overview
 
 This skill automates the creation of high-quality, platform-specific social media post images and multi-slide carousels.
-By reading a central design system, dynamically injecting user-provided copy and assets into HTML slide structures based
-on the platform specifications, and wrapping them in an executable Node.js loop, this skill outputs an automated
-multi-frame rendering blueprint ready for immediate system execution.
+By reading a central design system, resolving local or remote background image assets into standalone base64 Data URLs,
+injecting user-provided copy into HTML slide configurations based on platform specifications, and executing the renders
+via a Node.js Playwright loop, this skill outputs a structural visual rendering blueprint ready for immediate system
+execution.
 
 ---
 
@@ -42,7 +43,7 @@ carousels programmatically while preserving strict brand identity across our sup
 | *↳ Headline*                 | String | No        | The main title or value proposition of the specific slide.                                                       |
 | *↳ Sub Head*                 | String | No        | Supporting text or secondary details providing context for the specific slide.                                   |
 | *↳ CTA*                      | String | No        | Call To Action text (typically reserved for the final slide).                                                    |
-| *↳ Path to background image* | String | No        | Local file path (`file://`) or URL to the background image asset for the specific slide.                         |
+| *↳ Path to background image* | String | No        | Local relative/absolute path (e.g., `./images/bg.png`) or remote web URL to the background image asset.          |
 
 ---
 
@@ -63,7 +64,8 @@ matrix below.
 The container bounds and dimensions must be dynamically determined using the matrix below.
 
 > **Important (Safe Zones):** For all vertical video formats (`story` and `reel_cover`), the template must center text
-> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by native
+> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by
+> native
 > social media app UI elements.
 
 ### 1. Instagram (`instagram`)
@@ -132,28 +134,23 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
 * Extract authorized brand assets including font families, font weights, primary/secondary color palettes, and global
   padding rules.
 
-### Step 2: Compile Carousel Slides HTML & CSS Matrix
+### Step 2: Structure input parameters matrix array
 
-* Loop through the **Slides Data** array. For *each individual slide data object*, dynamically compile a complete,
-  standalone HTML string structure.
-* **Typography & Content Mapping:** Apply the specific scales outlined in **Typography & Font Scale Guidelines**. If an
-  optional parameter is absent or empty, completely exclude it from that specific slide's DOM layout so it occupies zero
-  space.
-* **Safe Zone Enforcement:** For 9:16 formats, wrap all copy within an overlay container structurally constrained to the
-  central 1080 x 1350 px bounding box.
-* **Defensive Layout Constraints & Images:** Apply `word-wrap: break-word;` and `overflow-wrap: break-word;` to all text
-  boxes. Force layout-safe `-webkit-line-clamp` boundaries. Set `box-sizing: border-box;` globally. Apply the background
-  image using `background-size: cover;` and `background-position: center;`. If a local system paths utilize a local
-  filesystem structure, ensure it uses the valid absolute URL pattern (`file://`).
+* Map the parsed slide data fields into an asset array of JavaScript objects.
+* Do not attempt to pre-compile the HTML layouts directly into raw strings globally; instead, structure the script file
+  logic so that the text fields and background system paths are stored inside a clean objects matrix array (
+  `const slidesData = [...]`) to allow execution-level processing.
 
-### Step 3: Integrate into Multi-Page Playwright Script
+### Step 3: Script Integration & Base64 Image Processing Logic
 
-* Embed the resulting array of HTML slide strings directly into a structural execution loop within an executable Node.js
-  Playwright script template.
-* Dynamically inject the calculated pixel `width` and `height` properties into the context's browser viewport
-  configurations.
-* Enforce a `networkidle` load event state update inside the loop immediately after setting each slide's content to
-  ensure all web-fonts and background graphics finish loading prior to taking the distinct frame snapshot.
+* Embed the data objects array into an executable Node.js Playwright script template.
+* Incorporate a file-system or network resolution helper routine within the loop before generating the HTML text block.
+  If a local file path is referenced, use `fs.readFileSync` to pull the asset buffer and convert it into a base64 Data
+  URL (`data:image/png;base64,...`).
+* Inject this resulting base64 Data URL or direct web string dynamically into a template-literal background
+  configuration string, utilizing proper double-quote encapsulation inside the layout's template styles (
+  `background-image: url("${bgDataUrl}");`).
+* Apply all typography layout guidelines defensively (`word-wrap`, `-webkit-line-clamp`, `box-sizing: border-box`).
 
 ### Step 4: Output Execution Payload
 
@@ -172,14 +169,20 @@ const path = require('path');
   const height = [Insert Evaluated Height];
   const uniqueId = '[UniqueId]';
 
+  // Raw slides data array structured directly from the user's input parameters
+  const slidesData = [
+    {
+      hook: "[Insert Hook Text]",
+      headline: "[Insert Headline Text or empty string]",
+      subHead: "[Insert Sub Head Text or empty string]",
+      cta: "[Insert CTA Text or empty string]",
+      bgPath: "[Insert Path to background image or empty string]"
+    }
+  ];
+
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width, height } });
   const page = await context.newPage();
-
-  // Array of self-contained compiled HTML slides generated from input parameters
-  const slides = [
-    `<!DOCTYPE html><html><head><style>/* Slide 1 CSS */</style></head><body><!-- Slide 1 Content --></body></html>`
-  ];
 
   // Ensure target output directory space exists
   const outputDir = path.resolve('output', `asset_${uniqueId}`);
@@ -188,10 +191,62 @@ const path = require('path');
   }
 
   // Sequentially process and capture every slide image asset in the payload
-  for (let i = 0; i < slides.length; i++) {
+  for (let i = 0; i < slidesData.length; i++) {
+    const slide = slidesData[i];
     const outputPath = path.join(outputDir, `slide_${i + 1}.png`);
 
-    await page.setContent(slides[i]);
+    // Resolve background images into a bulletproof Base64 Data URL to bypass browser file security
+    let bgStyle = '';
+    if (slide.bgPath) {
+      try {
+        if (slide.bgPath.startsWith('http://') || slide.bgPath.startsWith('https://')) {
+          // Keep web URL paths intact
+          bgStyle = `background-image: url("${slide.bgPath}");`;
+        } else {
+          // Resolve relative or absolute local files, convert to data URI string
+          const resolvedPath = path.resolve(__dirname, slide.bgPath);
+          if (fs.existsSync(resolvedPath)) {
+            const ext = path.extname(resolvedPath).replace('.', '') || 'png';
+            const base64Data = fs.readFileSync(resolvedPath, { encoding: 'base64' });
+            bgStyle = `background-image: url("data:image/${ext};base64,${base64Data}");`;
+          }
+        }
+      } catch (err) {
+        console.error(`Warning: Failed to process background image path: ${slide.bgPath}`, err);
+      }
+    }
+
+    // Dynamic self-contained HTML layout generation with embedded asset content
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          width: ${width}px;
+          height: ${height}px;
+          overflow: hidden;
+          font-family: sans-serif; /* Fallback brand font context here */
+          ${bgStyle}
+          background-size: cover;
+          background-position: center;
+        }
+        /* Extra structural styling rules map directly here */
+      </style>
+    </head>
+    <body>
+      <div class="canvas-container">
+        ${slide.hook ? `<div class="hook">${slide.hook}</div>` : ''}
+        ${slide.headline ? `<div class="headline">${slide.headline}</div>` : ''}
+        ${slide.subHead ? `<div class="sub-head">${slide.subHead}</div>` : ''}
+        ${slide.cta ? `<div class="cta-button">${slide.cta}</div>` : ''}
+      </div>
+    </body>
+    </html>
+    `;
+
+    await page.setContent(htmlContent);
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: outputPath, type: 'png' });
   }
@@ -199,9 +254,9 @@ const path = require('path');
   await browser.close();
 
   // Unified application output logs
-  if (slides.length === 1) {
+  if (slidesData.length === 1) {
     console.log(`Asset generated: ${path.join(outputDir, 'slide_1.png')}`);
   } else {
-    console.log(`Carousel generated: ${slides.length} slides saved to ${outputDir}`);
+    console.log(`Carousel generated: ${slidesData.length} slides saved to ${outputDir}`);
   }
 })();
