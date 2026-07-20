@@ -85,8 +85,11 @@ design requirements via one of the two designated ingestion routing pathways:
 
 If the user provides a website link:
 
-1. Use the environment's designated headless web/DOM parsing tool to fetch the calculated styles, or read the provided
-   raw stylesheets (`.css`) directly.
+1. Use `curl` or `wget` to fetch the web page or the provided raw stylesheets (`.css`) directly.
+    * **NEVER user `web_fetch` tool** since it's converting content to markdown and losing structural fidelity.
+    * **CRITICAL:** If the environment lacks a local `curl` or `wget` binary, output the error message:
+      `[ERROR] No compatible web fetch tool available to retrieve live page content. Aborting design generation.` and
+      terminate execution immediately.
 2. If relying on text extraction, isolate dominant palette hex values, declared font-family names, and structural
    spacing configurations. Avoid parsing raw, minified single-line JavaScript strings.
 
