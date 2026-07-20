@@ -24,14 +24,6 @@ generated visual assets.
 The primary deliverable of this skill is a plain-text summary listing the absolute full paths to all rendered image
 assets.
 
-### Text Output Structure
-
-```text
-n asset(s) generated:
-- /Users/username/project/output/asset_[UniqueId]/slide_1.png
-- /Users/username/project/output/asset_[UniqueId]/slide_2.png
-```
-
 Downstream agent scripts and platform wrappers must parse `stdout` for the printed file path location to locate,
 inspect, or dispatch the rendered files.
 
@@ -166,30 +158,43 @@ fi
 * Extract authorized brand assets including font families, font weights, primary/secondary color palettes, and global
   padding rules.
 
-### Step 2: Structure Input Parameters Matrix Array
+### Step 2: Generate the HTML
 
-* Map the parsed slide data fields into an asset array of JavaScript objects.
-* Do not attempt to pre-compile the HTML layouts directly into raw strings globally; instead, structure the script file
-  logic so that the text fields and background system paths are stored inside a clean objects matrix array (
-  `const slidesData = [...]`) to allow execution-level processing.
+For each slide in the slides data array, generate a self-contained HTML file (
+`output/asset_[UniqueId]/temp_slide_N.html`)
+incorporating the required platform dimensions, background styles, and injected text content (hook, headline, subHead,
+cta).
 
-### Step 3: Script Integration & Image Asset Staging Logic
+The HTML structure for each slide should follow this template:
 
-* Embed the data objects array into an executable Node.js Playwright script template.
-* Incorporate an asset management routine before generating the visual layout. If a local file path is referenced, the
-  script must copy that background image file directly into the designated working output directory.
-* Map the background style using a clean relative file path pointing to the copied asset within the working workspace (*
-  *no `file://` prefix, no base64 Data URLs**).
-* Inject this resulting relative path string or direct web URL dynamically into a template-literal background
-  configuration string (`background-image: url("${relativePath}");`).
-* Apply all typography layout guidelines defensively (`word-wrap`, `-webkit-line-clamp`, `box-sizing: border-box`).
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        ...
+    </style>
+</head>
+<body>
+<div class="slide" style="background-image: url('[background-image-path]');....">
+    <div class="overlay">
+        <div class="hook">[hook]</div>
+        <div class="headline">[headline]</div>
+        <div class="subhead">[subhead]</div>
+        <div class="cta">[cta]</div>
+    </div>
+</div>
+</body>
+</html>
+```
 
-### Step 4: Output Execution Payload & Return Asset Location
+### Step 3: Output Execution Payload & Return Asset Location
 
-* Deliver the output by generating the exact JavaScript code block structure detailed below.
-* The script explicitly concludes by logging the absolute file path location of the created asset(s) to stdout.
-* Do not append conversational chat text, instructions, or follow-up questions after outputting this block. Stop
-  generating immediately.
+* Run sequence of `playwright-cli` commands to open each slide template, resize the viewport to the target
+  specification,
+  capture a pristine PNG screenshot, and close the session.
+* Log the absolute full file path location of the created asset(s) to stdout.
 
 ```bash
 # 1. Open the first slide template file in Playwright CLI
