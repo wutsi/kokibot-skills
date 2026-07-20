@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that output the precise file path location of created assets.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that output a JSON payload containing the absolute full file paths of created assets.
 metadata:
     categories:
         - design
@@ -13,18 +13,26 @@ metadata:
 This skill automates the creation of high-quality, platform-specific social media post images and multi-slide carousels.
 By reading a central design system, staging provided background images into the local execution workspace, injecting
 user-provided copy into HTML slide configurations based on platform specifications, and executing the renders via a
-Node.js Playwright loop, this skill outputs the exact local system file path location of the generated visual assets
-ready for immediate consumption or downstream delivery pipelines.
+Node.js Playwright loop, this skill outputs a JSON object containing the absolute full file system paths of all
+generated visual assets ready for immediate system consumption.
 
 ---
 
 ## Output Contract & Location Reporting
 
-The primary deliverable of this skill is the output directory path containing the generated image asset(s).
+The primary deliverable of this skill is a JSON payload listing the absolute full paths to all rendered image assets.
 
-* **Single Static Asset:** Resolves to `output/asset_[UniqueId]/slide_1.png`
-* **Multi-Slide Carousel:** Resolves to the container folder `output/asset_[UniqueId]/` containing indexed images (
-  `slide_1.png`, `slide_2.png`, etc.)
+### JSON Output Structure
+
+```json
+{
+    "images": [
+        "[full-path-image-slide-1]",
+        "[full-path-image-slide-2]",
+        ...
+    ]
+}
+```
 
 Downstream agent scripts and platform wrappers must parse `stdout` for the printed file path location to locate,
 inspect, or dispatch the rendered files.
@@ -77,7 +85,8 @@ matrix below.
 The container bounds and dimensions must be dynamically determined using the matrix below.
 
 > **Important (Safe Zones):** For all vertical video formats (`story` and `reel_cover`), the template must center text
-> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by native
+> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by
+> native
 > social media app UI elements.
 
 ### 1. Instagram (`instagram`)
@@ -197,7 +206,7 @@ const path = require('path');
   const context = await browser.newContext({ viewport: { width, height } });
   const page = await context.newPage();
 
-  // Ensure target output directory space exists
+  // Ensure target output directory space exists and resolve full absolute path
   const outputDir = path.resolve('output', `asset_${uniqueId}`);
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -208,7 +217,8 @@ const path = require('path');
   // Sequentially process and capture every slide image asset in the payload
   for (let i = 0; i < slidesData.length; i++) {
     const slide = slidesData[i];
-    const outputPath = path.join(outputDir, `slide_${i + 1}.png`);
+    const fileName = `slide_${i + 1}.png`;
+    const fullOutputPath = path.join(outputDir, fileName);
 
     // Process and copy background images directly to the working workspace directory
     let bgStyle = '';
@@ -221,14 +231,14 @@ const path = require('path');
           // Resolve relative or absolute local files
           const sourcePath = path.resolve(__dirname, slide.bgPath);
           if (fs.existsSync(sourcePath)) {
-            const fileName = `bg_slide_${i + 1}${path.extname(sourcePath)}`;
-            const targetCopyPath = path.join(outputDir, fileName);
+            const bgFileName = `bg_slide_${i + 1}${path.extname(sourcePath)}`;
+            const targetCopyPath = path.join(outputDir, bgFileName);
 
             // Copy background image asset directly into the workspace working directory
             fs.copyFileSync(sourcePath, targetCopyPath);
 
             // Reference the image using a local relative path with no file:// prefix
-            bgStyle = `background-image: url("${fileName}");`;
+            bgStyle = `background-image: url("${bgFileName}");`;
           }
         }
       } catch (err) {
@@ -272,9 +282,9 @@ const path = require('path');
 
     await page.goto(`file://${tempHtmlPath}`);
     await page.waitForLoadState('networkidle');
-    await page.screenshot({ path: outputPath, type: 'png' });
+    await page.screenshot({ path: fullOutputPath, type: 'png' });
 
-    generatedFiles.push(outputPath);
+    generatedFiles.push(fullOutputPath);
 
     // Clean up temporary HTML template footprint
     try { fs.unlinkSync(tempHtmlPath); } catch {}
@@ -282,13 +292,11 @@ const path = require('path');
 
   await browser.close();
 
-  // Explicitly return/log the absolute file location(s) of the generated asset(s)
-  console.log("=== GENERATED ASSETS LOCATION ===");
-  if (generatedFiles.length === 1) {
-    console.log(`Asset Location: ${generatedFiles[0]}`);
-  } else {
-    console.log(`Directory Location: ${outputDir}`);
-    console.log(`Files (${generatedFiles.length}):`);
-    generatedFiles.forEach((filePath, idx) => console.log(`  Slide ${idx + 1}: ${filePath}`));
-  }
+  // Output clean JSON containing absolute full image paths
+  const resultJson = {
+    images: generatedFiles
+  };
+
+  console.log(JSON.stringify(resultJson, null, 2));
 })();
+```
