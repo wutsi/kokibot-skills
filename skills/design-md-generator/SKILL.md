@@ -32,8 +32,8 @@ tokens using a hybrid YAML/Markdown structure.
 * **State Preservation:** Before attempting an increment, the agent must ensure the contents of the existing
   `[home-directory]/DESIGN.md` (if any) have been explicitly read into the current context window.
 * **Semantic Iteration:**
-    * If updating an existing custom layout version string, increment its value appropriately (e.g., `v1.0.0` becomes
-      `v1.0.1`, or append an incremental revision count).
+    * If updating an existing custom layout version string, increment its value appropriately (e.g., `1.0.0` becomes
+      `1.0.1`, or append an incremental revision count).
 
 ### 3. Dual-Nature Output Requirement
 
@@ -68,24 +68,40 @@ the section entirely. The parsed output sequence must strictly be:
 * **Token References:** Cross-reference primitive tokens inside the `components` block using curly braces and object
   pathing: `"{colors.primary}"`.
 
+### 6. Strict Tool Blacklist
+
+* **Global Web Fetch Ban:** Under no circumstances should the `web_fetch` tool or any high-level automated web scraping
+  plugins be invoked during execution. All external web retrieval tasks must pass through local sandbox commands (
+  `curl`, `wget`) as specified in the operational pathways.
+
 ---
 
 ## Operational Execution Loop
 
-### Step 1: Context Ingestion
+### Step 1: Context Ingestion & Baseline Scan
 
-Before writing or modifying any token configurations, the agent must inspect the working environment and extract active
-design requirements via one of the two designated ingestion routing pathways:
+1. **Read Existing State First:** Before parsing any incoming external assets or source payloads, the agent MUST
+   explicitly read `[home-directory]/DESIGN.md` (if it exists) to extract the current `version` or `revision` tokens.
+   This preserves the state baseline before token noise from external data enters the context window.
+2. **Execute Routing Pathway:** Once the baseline version metadata is secured, proceed to extract active design
+   requirements from the designated pathway below:
 
 #### Pathway A: Live Web Page URL
+
+**!!! SYSTEM CONSTRAINTS & TOOL RESTRICTIONS !!!**
+
+* **NEVER USE THE `web_fetch` TOOL:** Under no circumstances should you invoke `web_fetch` or any automated
+  markdown-parsing web tools when a URL is provided.
+* **MANDATORY ALTERNATIVE:** You must fetch raw website content or download assets exclusively by running `curl`,
+  `wget`, or equivalent terminal commands inside your execution sandbox. This task requires raw source material and
+  binary asset streams which high-level fetch tools strip away or fail to save.
+* If the environment lacks a local `curl` or `wget` binary, output the error message:
+  `[ERROR] No compatible web fetch tool available to retrieve live page content. Aborting design generation.` and
+  terminate execution immediately.
 
 If the user provides a website link:
 
 1. Use `curl` or `wget` to fetch the web page or the provided raw stylesheets (`.css`) directly.
-    * **NEVER user `web_fetch` tool** since it's converting content to markdown and losing structural fidelity.
-    * **CRITICAL:** If the environment lacks a local `curl` or `wget` binary, output the error message:
-      `[ERROR] No compatible web fetch tool available to retrieve live page content. Aborting design generation.` and
-      terminate execution immediately.
 2. If relying on text extraction, isolate dominant palette hex values, declared font-family names, and structural
    spacing configurations. Avoid parsing raw, minified single-line JavaScript strings.
 
@@ -141,7 +157,7 @@ When executing this skill, your final text output must match this exact blueprin
 
 ```markdown
 ---
-version: alpha
+version: 1.0.0
 name: "Daylight Prestige"
 description: "A high-contrast professional interface layout."
 colors:
