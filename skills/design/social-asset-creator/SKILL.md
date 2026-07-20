@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that handle images via base64 encoding.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that handle local background images by staging them to the working directory.
 metadata:
     categories:
         - design
@@ -11,10 +11,10 @@ metadata:
 ## Overview
 
 This skill automates the creation of high-quality, platform-specific social media post images and multi-slide carousels.
-By reading a central design system, resolving local or remote background image assets into standalone base64 Data URLs,
+By reading a central design system, copying provided background images directly into the local execution workspace,
 injecting user-provided copy into HTML slide configurations based on platform specifications, and executing the renders
-via a Node.js Playwright loop, this skill outputs a structural visual rendering blueprint ready for immediate system
-execution.
+via a Node.js Playwright loop using clean relative file paths, this skill outputs a structural visual rendering
+blueprint ready for immediate system execution.
 
 ---
 
@@ -64,8 +64,7 @@ matrix below.
 The container bounds and dimensions must be dynamically determined using the matrix below.
 
 > **Important (Safe Zones):** For all vertical video formats (`story` and `reel_cover`), the template must center text
-> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by
-> native
+> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by native
 > social media app UI elements.
 
 ### 1. Instagram (`instagram`)
@@ -141,15 +140,15 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
   logic so that the text fields and background system paths are stored inside a clean objects matrix array (
   `const slidesData = [...]`) to allow execution-level processing.
 
-### Step 3: Script Integration & Base64 Image Processing Logic
+### Step 3: Script Integration & Image Asset Staging Logic
 
 * Embed the data objects array into an executable Node.js Playwright script template.
-* Incorporate a file-system or network resolution helper routine within the loop before generating the HTML text block.
-  If a local file path is referenced, use `fs.readFileSync` to pull the asset buffer and convert it into a base64 Data
-  URL (`data:image/png;base64,...`).
-* Inject this resulting base64 Data URL or direct web string dynamically into a template-literal background
-  configuration string, utilizing proper double-quote encapsulation inside the layout's template styles (
-  `background-image: url("${bgDataUrl}");`).
+* Incorporate an asset management routine before generating the visual layout. If a local file path is referenced, the
+  script must copy that background image file directly into the designated working output directory.
+* Map the background style using a clean relative file path pointing to the copied asset within the working workspace. *
+  *Do not use base64 encoding or prepend a `file://` prefix.**
+* Inject this resulting path string or direct web URL dynamically into a template-literal background configuration
+  string (`background-image: url("${relativePath}");`).
 * Apply all typography layout guidelines defensively (`word-wrap`, `-webkit-line-clamp`, `box-sizing: border-box`).
 
 ### Step 4: Output Execution Payload
@@ -195,7 +194,7 @@ const path = require('path');
     const slide = slidesData[i];
     const outputPath = path.join(outputDir, `slide_${i + 1}.png`);
 
-    // Resolve background images into a bulletproof Base64 Data URL to bypass browser file security
+    // Process and copy background images directly to the working workspace directory
     let bgStyle = '';
     if (slide.bgPath) {
       try {
@@ -203,12 +202,17 @@ const path = require('path');
           // Keep web URL paths intact
           bgStyle = `background-image: url("${slide.bgPath}");`;
         } else {
-          // Resolve relative or absolute local files, convert to data URI string
-          const resolvedPath = path.resolve(__dirname, slide.bgPath);
-          if (fs.existsSync(resolvedPath)) {
-            const ext = path.extname(resolvedPath).replace('.', '') || 'png';
-            const base64Data = fs.readFileSync(resolvedPath, { encoding: 'base64' });
-            bgStyle = `background-image: url("data:image/${ext};base64,${base64Data}");`;
+          // Resolve relative or absolute local files
+          const sourcePath = path.resolve(__dirname, slide.bgPath);
+          if (fs.existsSync(sourcePath)) {
+            const fileName = `bg_slide_${i + 1}${path.extname(sourcePath)}`;
+            const targetCopyPath = path.join(outputDir, fileName);
+
+            // Copy background image asset directly into the workspace working directory
+            fs.copyFileSync(sourcePath, targetCopyPath);
+
+            // Reference the image using a local relative path with no file:// prefix
+            bgStyle = `background-image: url("${fileName}");`;
           }
         }
       } catch (err) {
@@ -246,9 +250,20 @@ const path = require('path');
     </html>
     `;
 
-    await page.setContent(htmlContent);
+    // Note: page.setContent handles path resolution relative to the outputDir when configured via a base URL path option if needed,
+    // or by passing the output directory location context via file systems.
+    await page.goto(`data:text/html,${encodeURIComponent(htmlContent)}`);
+
+    // Fallback: If local relative asset tracking needs an explicit context, we write a temporary HTML payload file to the workspace
+    const tempHtmlPath = path.join(outputDir, `temp_slide_${i + 1}.html`);
+    fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
+
+    await page.goto(`file://${tempHtmlPath}`);
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: outputPath, type: 'png' });
+
+    // Clean up temporary HTML template footprint
+    try { fs.unlinkSync(tempHtmlPath); } catch {}
   }
 
   await browser.close();
