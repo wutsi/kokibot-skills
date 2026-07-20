@@ -101,18 +101,6 @@ If the user provides a `.pptx` file
 2. If available, invoke the extraction pipeline to dump text metadata blocks, shape schemas, and slide structures.
 3. Review the structural data to build the design baseline.
 
-#### Pathway C: Google Slide Deck Layout Link
-
-If the user provides a Google Slides link
-
-1. **Tool Verification:** Verify the availability of authenticated workspace APIs, slides platform layout connectors, or
-   browser extraction utilities. **CRITICAL:** If no programmatic extraction or remote document parsing tools are
-   available, output the error message:
-   `[ERROR] No compatible tool or skill available to fetch or process remote Google Slides links. Aborting design generation.`
-   and terminate execution immediately.
-2. If available, programmatically resolve and parse slide components, embedded template metrics, color schemes, and
-   structural layout configurations to establish the design baseline.
-
 *Baseline System Scan:* If ingestion succeeds, check `[home-directory]/DESIGN.md` for a legacy token baseline to
 cross-reference previous structural versions.
 
