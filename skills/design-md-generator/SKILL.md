@@ -20,6 +20,21 @@ tokens using a hybrid YAML/Markdown structure.
 
 ---
 
+## Triggers
+
+This skill is automatically triggered when the system detects any of the following user actions or inputs:
+
+- **UI Design Prompts:** Explicit text descriptions requesting the creation of a design system, style guide, layout, or
+  UI token schema.
+- **Live URL Submissions:** When a user provides a live website link or an explicit path to a CSS stylesheet file for
+  visual extraction.
+- **Presentation File Uploads:** When a user uploads or references a PowerPoint presentation file (.pptx) containing
+  brand layouts or design schemas.
+- **Design Delta Updates:** Requests to update, iterate on, or modify an existing DESIGN.md file located in the target
+  directory.
+
+---
+
 ## Core System Directives
 
 ### 1. File Storage Location
