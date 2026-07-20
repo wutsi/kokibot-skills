@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that handle local background images by staging them to the working directory.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by generating self-contained Node.js Playwright scripts that output the precise file path location of created assets.
 metadata:
     categories:
         - design
@@ -11,10 +11,23 @@ metadata:
 ## Overview
 
 This skill automates the creation of high-quality, platform-specific social media post images and multi-slide carousels.
-By reading a central design system, copying provided background images directly into the local execution workspace,
-injecting user-provided copy into HTML slide configurations based on platform specifications, and executing the renders
-via a Node.js Playwright loop using clean relative file paths, this skill outputs a structural visual rendering
-blueprint ready for immediate system execution.
+By reading a central design system, staging provided background images into the local execution workspace, injecting
+user-provided copy into HTML slide configurations based on platform specifications, and executing the renders via a
+Node.js Playwright loop, this skill outputs the exact local system file path location of the generated visual assets
+ready for immediate consumption or downstream delivery pipelines.
+
+---
+
+## Output Contract & Location Reporting
+
+The primary deliverable of this skill is the output directory path containing the generated image asset(s).
+
+* **Single Static Asset:** Resolves to `output/asset_[UniqueId]/slide_1.png`
+* **Multi-Slide Carousel:** Resolves to the container folder `output/asset_[UniqueId]/` containing indexed images (
+  `slide_1.png`, `slide_2.png`, etc.)
+
+Downstream agent scripts and platform wrappers must parse `stdout` for the printed file path location to locate,
+inspect, or dispatch the rendered files.
 
 ---
 
@@ -133,7 +146,7 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
 * Extract authorized brand assets including font families, font weights, primary/secondary color palettes, and global
   padding rules.
 
-### Step 2: Structure input parameters matrix array
+### Step 2: Structure Input Parameters Matrix Array
 
 * Map the parsed slide data fields into an asset array of JavaScript objects.
 * Do not attempt to pre-compile the HTML layouts directly into raw strings globally; instead, structure the script file
@@ -145,17 +158,18 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
 * Embed the data objects array into an executable Node.js Playwright script template.
 * Incorporate an asset management routine before generating the visual layout. If a local file path is referenced, the
   script must copy that background image file directly into the designated working output directory.
-* Map the background style using a clean relative file path pointing to the copied asset within the working workspace. *
-  *Do not use base64 encoding or prepend a `file://` prefix.**
-* Inject this resulting path string or direct web URL dynamically into a template-literal background configuration
-  string (`background-image: url("${relativePath}");`).
+* Map the background style using a clean relative file path pointing to the copied asset within the working workspace (*
+  *no `file://` prefix, no base64 Data URLs**).
+* Inject this resulting relative path string or direct web URL dynamically into a template-literal background
+  configuration string (`background-image: url("${relativePath}");`).
 * Apply all typography layout guidelines defensively (`word-wrap`, `-webkit-line-clamp`, `box-sizing: border-box`).
 
-### Step 4: Output Execution Payload
+### Step 4: Output Execution Payload & Return Asset Location
 
-* Deliver the output by generating the exact JavaScript code block structure detailed below. Do not append
-  conversational chat text, instructions, or follow-up questions after outputting this block. Stop generating
-  immediately.
+* Deliver the output by generating the exact JavaScript code block structure detailed below.
+* The script explicitly concludes by logging the absolute file path location of the created asset(s) to stdout.
+* Do not append conversational chat text, instructions, or follow-up questions after outputting this block. Stop
+  generating immediately.
 
 ```javascript
 const { chromium } = require('playwright');
@@ -188,6 +202,8 @@ const path = require('path');
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
+
+  const generatedFiles = [];
 
   // Sequentially process and capture every slide image asset in the payload
   for (let i = 0; i < slidesData.length; i++) {
@@ -250,11 +266,7 @@ const path = require('path');
     </html>
     `;
 
-    // Note: page.setContent handles path resolution relative to the outputDir when configured via a base URL path option if needed,
-    // or by passing the output directory location context via file systems.
-    await page.goto(`data:text/html,${encodeURIComponent(htmlContent)}`);
-
-    // Fallback: If local relative asset tracking needs an explicit context, we write a temporary HTML payload file to the workspace
+    // Write a temporary HTML file in the target workspace so relative background paths resolve cleanly
     const tempHtmlPath = path.join(outputDir, `temp_slide_${i + 1}.html`);
     fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
 
@@ -262,16 +274,21 @@ const path = require('path');
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: outputPath, type: 'png' });
 
+    generatedFiles.push(outputPath);
+
     // Clean up temporary HTML template footprint
     try { fs.unlinkSync(tempHtmlPath); } catch {}
   }
 
   await browser.close();
 
-  // Unified application output logs
-  if (slidesData.length === 1) {
-    console.log(`Asset generated: ${path.join(outputDir, 'slide_1.png')}`);
+  // Explicitly return/log the absolute file location(s) of the generated asset(s)
+  console.log("=== GENERATED ASSETS LOCATION ===");
+  if (generatedFiles.length === 1) {
+    console.log(`Asset Location: ${generatedFiles[0]}`);
   } else {
-    console.log(`Carousel generated: ${slidesData.length} slides saved to ${outputDir}`);
+    console.log(`Directory Location: ${outputDir}`);
+    console.log(`Files (${generatedFiles.length}):`);
+    generatedFiles.forEach((filePath, idx) => console.log(`  Slide ${idx + 1}: ${filePath}`));
   }
 })();
