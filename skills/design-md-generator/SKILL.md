@@ -20,7 +20,7 @@ tokens using a hybrid YAML/Markdown structure.
 
 ---
 
-## Triggers
+## When to Use
 
 This skill is automatically triggered when the system detects any of the following user actions or inputs:
 
