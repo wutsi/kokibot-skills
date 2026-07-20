@@ -101,7 +101,7 @@ If the user provides a `.pptx` file
 2. If available, invoke the extraction pipeline to dump text metadata blocks, shape schemas, and slide structures.
 3. Review the structural data to build the design baseline.
 
-#### Pathway C: Google Slick Deck Layout Link
+#### Pathway C: Google Slide Deck Layout Link
 
 If the user provides a Google Slides link
 
@@ -232,15 +232,3 @@ Primary call-to-actions adapt full background fills inherited from structural to
 - Do use the primary highlight exclusively for major user actions.
 - Don't mix sharp elements and organic heavy corner behaviors within a single screen.
 ```
-
-### Error Mitigation Tree
-
-- **Duplicate Section Heading:** Fail file generation immediately. Merge the duplicate context fragments into a single
-  sequential heading block.
-
-- **Unknown Component Property:** Accept but issue an immediate warning flag outlining the custom property used.
-
-- **Broken References:** If a linting loop reports an unmapped component path token (e.g., {colors.brand} does not
-  exist), rebuild the primary YAML token block to include the missing variable anchor.
-
-
