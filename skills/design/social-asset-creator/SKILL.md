@@ -161,7 +161,7 @@ fi
 ### Step 2: Generate the HTML
 
 For each slide in the slides data array, generate a self-contained HTML file (
-`output/asset_[UniqueId]/temp_slide_N.html`)
+`[home-directory]/workspace/output/asset_[UniqueId]/temp_slide_N.html`)
 incorporating the required platform dimensions, background styles, and injected text content (hook, headline, subHead,
 cta).
 
@@ -198,19 +198,19 @@ The HTML structure for each slide should follow this template:
 
 ```bash
 # 1. Open the first slide template file in Playwright CLI
-playwright-cli open file://$(pwd)/output/asset_[UniqueId]/temp_slide_1.html
+playwright-cli open file://[home-directory]/workspace/output/asset_[UniqueId]/temp_slide_1.html
 
 # 2. Resize viewport to match target platform dimensions (e.g., width x height)
 playwright-cli resize [Insert Evaluated Width] [Insert Evaluated Height]
 
 # 3. Take screenshot and save to final absolute asset path
-playwright-cli screenshot --filename=$(pwd)/output/asset_[UniqueId]/slide_1.png
+playwright-cli screenshot --filename=[home-directory]/workspace/output/asset_[UniqueId]/slide_1.png
 
 # 4. Close session when finished or move to next tab/file
 playwright-cli close
 
 # Repeat for subsequent slides as necessary, then clean up temporary HTML files:
-rm $(pwd)/output/asset_[UniqueId]/temp_slide_*.html
+rm [home-directory]/workspace/output/asset_[UniqueId]/temp_slide_*.html
 
 # Output plain text summary list containing absolute full image paths
 echo "n asset(s) generated:"
