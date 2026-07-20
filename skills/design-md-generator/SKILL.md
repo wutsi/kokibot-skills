@@ -2,236 +2,257 @@
 name: "design-md-generator"
 description: "Generates or updates a machine-readable design contract file (DESIGN.md) containing product UI specs, mandatory local brand assets (logos/backgrounds only), specialized social typography scales, and cross-channel social media templates."
 metadata:
-  categories: 
-    - design
-  keywords: 
-    - design system
-    - DESIGN.md
-    - brand guidelines
-    - design tokens
-    - social media typography
-    - asset downloader
+    categories:
+        - design
 ---
 
 # Skill: design-md-generator
 
-This skill processes brand assets, websites, or visual instructions and codifies them into a highly structured `DESIGN.md` file. This file acts as a permanent, machine-readable visual contract for both engineering and content generation agents. Additionally, **it strictly mandates the local download and preservation of core visual assets** (logos, key backgrounds) to a dedicated assets directory, keeps code out of the assets directory, and defines an exact, highly legible typography matrix optimized for high-compression social media feeds.
+## Overview
 
-## !!! SYSTEM CONSTRAINTS & TOOL RESTRICTIONS (READ FIRST) !!!
-*   **NEVER USE THE `web_fetch` TOOL:** Under no circumstances should you invoke `web_fetch` or any automated markdown-parsing web tools when a URL is provided. 
-*   **MANDATORY ALTERNATIVE:** You must fetch raw website content or download assets exclusively by running `curl`, `wget`, or equivalent terminal commands inside your execution sandbox. This task requires raw source material and binary asset streams which high-level fetch tools strip away or fail to save.
+This skill systematically constructs a unified, production-ready `DESIGN.md` file based on a brand concept, user
+description, or UI prompt. The generated file bridges human-readable design rationale with machine-readable design
+tokens using a hybrid YAML/Markdown structure.
 
----
-
-## 0. Trigger Conditions
-
-This skill is automatically triggered when the user expresses any of the following intents:
-*   **Design System Creation:** Requesting to build, define, initialize, or document a new design system, brand guidelines, or visual guidelines.
-*   **File Generation:** Explicitly asking to generate, write, update, or bootstrap a `DESIGN.md` file or its visual HTML preview.
-*   **Asset Codification & Localization:** Providing brand assets, colors, typography details, logo assets, or a website URL and wanting to download assets locally and transform them into a formal design contract.
-*   **Social & Layout Guidelines:** Requesting safe-zone standards, mobile layout parameters, or visual templates for cross-channel content.
-
-*Keywords to listen for:* `create design system`, `generate DESIGN.md`, `brand guidelines`, `design tokens`, `visual contract`, `extract styles from website`, `generate design preview`, `download logo`, `save brand assets`, `social media typography`.
+- Specification
+  Authority: [Google Labs DESIGN.md Spec](https://github.com/google-labs-code/design.md/blob/main/docs/spec.md)
+- **Current Spec Version:** `0.0.1`
 
 ---
 
-## 1. Execution Protocol
+## Core System Directives
 
-When triggered, the agent must execute the following sequence:
+### 1. File Storage Location
 
-1. **Verify & Ingest Context**: 
-   * Check if a valid `brand_context` (text, guidelines, or URL) is provided.
-   * **If missing or blank:** Stop execution immediately. Prompt the user: *"Please provide a website URL, brand guidelines, or a description of your brand assets so I can generate your DESIGN.md."* Do not proceed to Step 2 until this context is supplied.
-   * **If a URL is provided:** Fetch the raw HTML using a low-level command like `curl` (remembering the absolute ban on the `web_fetch` tool).
-     * *Single-Page Application (SPA) Fallback:* If the returned HTML is a minimal shell, scan the raw source code for linked `.css` assets, inline styles, asset paths, or Tailwind configurations to extract primary color tokens, typography scales, and layout aesthetics.
-   * **Identify Scope:** Assess whether social media guidelines or channels are mentioned in the source context. If present, set `include_social` to `true` to trigger the social media frontmatter and markdown sections.
+* **Strict Target Path:** The resulting file must always be read from and written directly to
+  `[home-directory]/DESIGN.md`. Do not write to temporary subdirectories or alternative file names.
 
-2. **Mandatory Asset Localization (Media Assets Only)**:
-   * Scan the raw HTML, input text, styling sheets, or context for references to the brand's primary assets (e.g., logo_primary, primary background/hero graphics, or favicons).
-   * **Strict Blocking Guardrail:** At least one core visual asset (such as a primary logo) **must** be present or identified. If no image URLs, SVGs, or local assets are found in the provided context, **stop execution immediately**. Prompt the user: *"This skill requires at least one core visual asset (such as a primary logo image URL or SVG) to generate the visual contract. Please provide the asset details to continue."*
-   * **Target Directory:** Create the destination directory: `[home-directory]/workspace/design/assets/` using a shell command (`mkdir -p`).
-   * **Asset Isolation Constraint:** **Only binary or vector image assets explicitly referenced in the `DESIGN.md` (e.g., logo and background image assets) may be stored in the `/assets/` folder.** Do not output external CSS stylesheets, JavaScript files, or HTML scripts into this directory. All preview styling and scripting logic must reside inline within the HTML preview file.
-   * **Download Execution:** Save the identified binary or vector assets using a direct terminal command like `curl -L -o`.
-     * Clean and rename the files systematically (e.g., `logo_primary.png` or `logo_primary.svg`, `background_primary.jpg`).
-   * **Update References:** Map these newly downloaded local relative paths (e.g., `./assets/logo_primary.png`) to the `brand.assets` keys in the YAML block. *No external/remote image URLs are allowed to remain in the final document's assets section.*
+### 2. Version Incrementing Rule
 
-3. **Draft Token Block**: 
-   * Construct a valid semantic YAML frontmatter block mapping out `light` and `dark` themes, typography scales (including the specialized social typography tokens), layout spacing, localized asset paths, and conditional social media specs.
-   * **Dynamic Versioning:** If a `DESIGN.md` already exists, read its current version. If the existing file's frontmatter is unreadable, corrupt, or missing, fallback to defaulting to `1.0.0`. Increment the patch version (e.g., `1.1.0` to `1.1.1`) for minor token adjustments, or the minor version (e.g., `1.1.0` to `1.2.0`) if new layout rules, local assets, or social platforms are added.
+* **State Preservation:** Before attempting an increment, the agent must ensure the contents of the existing
+  `[home-directory]/DESIGN.md` (if any) have been explicitly read into the current context window.
+* **Semantic Iteration:**
+    * If updating an existing custom layout version string, increment its value appropriately (e.g., `v1.0.0` becomes
+      `v1.0.1`, or append an incremental revision count).
 
-4. **Write System Guidelines**: Below the frontmatter, write the human-readable Markdown guidelines covering Visual Vibe, UI Components, Theme Transitions, and Social Media Guardrails (fully detailed with the new typography rules).
+### 3. Dual-Nature Output Requirement
 
-5. **Draft HTML Preview Page**: Generate an interactive, highly polished, self-contained `preview.html` file using the newly generated design tokens and localized assets. 
-   * **The preview file must include:**
-     * A CSS block injecting the light and dark tokens as native CSS custom properties (`--color-bg`, `--color-text`, etc.).
-     * References to the localized media assets in `[home-directory]/workspace/design/assets/` (e.g., displaying the downloaded logo).
-     * **Embedded Code Constraint:** All CSS layout declarations, theme toggle logic, and preview interactions must be written directly inline (within `<style>` and `<script>` blocks) inside `preview.html`. No styles or interactive scripts should be compiled into external `.css` or `.js` files inside `/assets/`.
-     * A real-time Light/Dark theme toggle control.
-     * Visual swatches showing the active color palette.
-     * Typography scale layout showcasing UI scales side-by-side with the new **Social Typography Scale** (Hero, Headline, Subhead, and Micro-Meta) to visually validate legibility.
-     * Rendered interactive components (Buttons with hover states, Cards, and layout spacing grid indicators).
-     * Interactive social media layout canvas simulator showing the visual safe-zone overlay boxes based on the spacing rules defined in the system.
-     * **Bulletproof Icon Architecture:** To prevent broken, missing, or blocked icons, do not use external icon fonts (such as FontAwesome). Instead, use inline SVGs or the Lucide CDN script link `<script src="https://unpkg.com/lucide@latest"></script>` resolved via `lucide.createIcons();` at the end of the page.
+Every generated file must consist of exactly two parts:
 
-6. **File Generation (Instant Write & Overwrite)**: 
-   * **Backup Strategy:** If a `DESIGN.md` already exists, immediately copy it to the backup directory: `[home-directory]/workspace/design/bak/yyyy/MM/dd/DESIGN-HHmm.md` (substituting actual system date and time values).
-   * **Direct Write:** Proceed to write/overwrite the updated files directly to `[home-directory]/workspace/design/DESIGN.md` and `[home-directory]/workspace/design/preview.html`.
+* **YAML Frontmatter:** Machine-readable design tokens mapping colors, typography, spacing, shapes, and component
+  overrides.
+* **Markdown Body:** Human-readable prose explaining the design choices and styling guardrails using strict `##` header
+  sequences.
+
+### 4. Strict Sequence Constraint
+
+Markdown sections cannot be reordered, duplicated, or interleaved. If data for a section is missing or irrelevant, omit
+the section entirely. The parsed output sequence must strictly be:
+
+1. `---` YAML Frontmatter Delimiters
+2. `## Overview` (Alternative allowed: `## Brand & Style`)
+3. `## Colors`
+4. `## Typography`
+5. `## Layout` (Alternative allowed: `## Layout & Spacing`)
+6. `## Elevation & Depth` (Alternative allowed: `## Elevation`)
+7. `## Shapes`
+8. `## Components`
+9. `## Do's and Don'ts`
+
+### 5. Syntax Rules
+
+* **Color Formats:** Hex notation (`#RRGGBB` or `#RRGGBBAA`) is the default standard for tool compliance.
+* **Dimension Scales:** Suffix all sizes with valid CSS units (`px`, `em`, `rem`).
+* **Quotation Guardrails:** Always wrap Hex codes (`"#1A1C1E"`) and dimensions with symbols or negative numbers (e.g.,
+  `letterSpacing: "-0.02em"`) in double quotes to prevent YAML parsing crashes.
+* **Token References:** Cross-reference primitive tokens inside the `components` block using curly braces and object
+  pathing: `"{colors.primary}"`.
 
 ---
 
-## 2. Output Schema Template
+## Operational Execution Loop
 
-The generated `DESIGN.md` file must strictly adhere to this structural schema:
+```
+[Context Ingestion] -> [Read Existing File at Path] -> [Extract Intent & Bump Version] -> [Build YAML Tokens] -> [Generate Markdown Prose] -> [Validate & Save to Path]
+```
+
+### Step 1: Context Ingestion
+
+Before writing or modifying any token configurations, the agent must inspect the working environment and extract active
+design requirements via one of the two designated ingestion routing pathways:
+
+#### Pathway A: Live Web Page URL
+
+If the user provides a website link:
+
+1. Use the environment's designated headless web/DOM parsing tool to fetch the calculated styles, or read the provided
+   raw stylesheets (`.css`) directly.
+2. If relying on text extraction, isolate dominant palette hex values, declared font-family names, and structural
+   spacing configurations. Avoid parsing raw, minified single-line JavaScript strings.
+
+#### Pathway B: PowerPoint Deck Layout File
+
+If the user provides a `.pptx` file
+
+1. **Tool Verification:** Verify the availability of local parser tools, document extraction engines, or presentation
+   processing skills. **CRITICAL:** If no dedicated layout extraction or text conversion tools are available in the
+   current environment, output the error message:
+   `[ERROR] No compatible tool or skill available to process .pptx files. Aborting design generation.` and terminate
+   execution immediately.
+2. If available, invoke the extraction pipeline to dump text metadata blocks, shape schemas, and slide structures.
+3. Review the structural data to build the design baseline.
+
+#### Pathway C: Google Slick Deck Layout Link
+
+If the user provides a Google Slides link
+
+1. **Tool Verification:** Verify the availability of authenticated workspace APIs, slides platform layout connectors, or
+   browser extraction utilities. **CRITICAL:** If no programmatic extraction or remote document parsing tools are
+   available, output the error message:
+   `[ERROR] No compatible tool or skill available to fetch or process remote Google Slides links. Aborting design generation.`
+   and terminate execution immediately.
+2. If available, programmatically resolve and parse slide components, embedded template metrics, color schemes, and
+   structural layout configurations to establish the design baseline.
+
+*Baseline System Scan:* If ingestion succeeds, check `[home-directory]/DESIGN.md` for a legacy token baseline to
+cross-reference previous structural versions.
+
+### Step 2: Extract Design Input & Delta Processing
+
+Analyze the delta between the raw incoming user prompt and the ingested system context. Isolate the target updates (
+e.g., changing a primary color hex vs. appending a new social template component block).
+
+### Step 3: Formulate the Token Schema & Increment Version
+
+Calculate the new incremented version or revision code based on the ingested file state. Map configurations directly
+into the YAML schema layout format:
+
+* Include the freshly updated version or `revision: <integer>` identifier tracking parameters.
+* `colors`: `primary`, `secondary`, `tertiary`, `neutral`.
+* `typography`: Level mappings containing `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, and `letterSpacing` (
+  including custom social media scaling arrays).
+* `spacing` & `rounded`: Sizing scales using logical keys (`xs`, `sm`, `md`, `lg`, `xl`, `full`).
+* `components`: Standard components and custom cross-channel social templates, matching structural token rules.
+
+### Step 4: Handle Component Aliases & Variants
+
+Map atomic styles to standard component states flatly.
+
+* *Note:* Never nest interactive states under a parent key. Use sequential sibling keys: `button-primary`,
+  `button-primary-hover`, and `button-primary-active`.
+
+### Step 5: Write Descriptive Prose Sections
+
+Draft clean documentation within the strict markdown layout sequence. Ensure descriptive color names used in the prose
+map explicitly back to token keys.
+
+---
+
+## Code Reference Layout
+
+When executing this skill, your final text output must match this exact blueprint structural shape:
 
 ```markdown
 ---
-name: "[Brand/Project Name]"
-description: "Design system and brand guidelines source of truth."
-version: "[Dynamic Version - e.g., 1.0.0 or incremented version]"
-brand:
-  name: "[Name]"
-  assets:
-    logo_primary: "./assets/logo_primary.[ext]"
-    background_primary: "./assets/background_primary.[ext]"
+version: alpha
+name: "Daylight Prestige"
+description: "A high-contrast professional interface layout."
 colors:
-  light:
-    system_background: "#ffffff"
-    system_background_secondary: "#f5f5f7"
-    label: "#1d1d1f"
-    secondary_label: "#86868b"
-    accent: "[Primary interactive color]"
-    border: "#d2d2d7"
-  dark:
-    system_background: "[Pure black or deep dark slate]"
-    system_background_secondary: "[Elevated container color]"
-    label: "[Near-white crisp color]"
-    secondary_label: "#86868b"
-    accent: "[High-contrast color matching light accent]"
-    border: "[Subtle dark line divider]"
+  primary: "#1A1C1E"
+  secondary: "#6C7278"
+  tertiary: "#B8422E"
+  neutral: "#F7F5F2"
 typography:
-  font_family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-  sizes:
-    hero: "48px"
-    header: "32px"
-    body: "16px"
-    caption: "12px"
-  # Core Social Media Typography Tokens
-  social:
-    font_family_fallback: "[Impact-friendly heavy sans-serif recommended for compressed media, e.g., 'Inter Black', 'League Spartan', 'Arial Black']"
-    scale:
-      hero_hook:
-        size: "96px"
-        line_height: "1.0"
-        weight: "900" # Extra Black / Heavy
-      main_headline:
-        size: "64px"
-        line_height: "1.1"
-        weight: "800" # Extra Bold
-      subhead_body:
-        size: "32px"
-        line_height: "1.4"
-        weight: "500" # Medium
-      micro_meta:
-        size: "20px"
-        line_height: "1.2"
-        weight: "700" # Bold
+  headline-md:
+    fontFamily: "Public Sans"
+    fontSize: "32px"
+    fontWeight: 600
+    lineHeight: 1.2
+  body-md:
+    fontFamily: "Public Sans"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.6
 spacing:
-  base_grid: "8px" # Multiples of 8px (8, 16, 24, 32, 48, 64)
-# Note: Include this block only if include_social == true
-social_media:
-  platforms:
-    instagram:
-      carousel_and_post: "1080x1350 (4:5 Portrait) or 1080x1080 (1:1 Square)"
-      stories_and_reels: "1080x1920 (9:16 Vertical)"
-    facebook:
-      feed_post: "1200x630 (1.91:1 Landscape) or 1080x1350 (4:5)"
-      stories: "1080x1920 (9:16 Vertical)"
-    linkedin:
-      image_and_pdf_slides: "1080x1350 (4:5 Portrait) or 1200x627 (1.91:1)"
-    tiktok:
-      video_overlay_canvas: "1080x1920 (9:16 Vertical)"
+  sm: "8px"
+  md: "16px"
+rounded:
+  sm: "4px"
+  md: "8px"
+components:
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.neutral}"
+    rounded: "{rounded.sm}"
+    padding: "12px"
+  button-primary-hover:
+    backgroundColor: "{colors.secondary}"
 ---
 
-# [Brand Name] Design & Brand System
+## Overview
 
-This document is the visual source of truth. Read these rules before generating any UI code or marketing graphics.
+The design system defines the visual identity of a premium workspace platform. It targets deep professional density.
 
-## 1. Visual Vibe
-*   [Clear visual description of core aesthetics - high density, cozy editorial, minimalist, etc.]
-*   [How whitespace and margins are managed across layouts.]
+## Colors
 
-## 2. Adaptive Theme Transitions (UI Only)
-*   **True Black/Dark Canvas:** Background sets to `colors.dark.system_background`.
-*   **Layer Elevation:** 
-    *   Level 0 (Canvas): Background
-    *   Level 1 (Cards/Shelves): Secondary Background
-    *   Level 2 (Modals/Dropdowns): Higher gray/slate elevation offset.
-*   **Image Dimming:** Dim heavy visual graphics by 5-10% to protect night readability.
+The palette is rooted in high-contrast neutrals and a single crisp interaction highlight.
 
-## 3. UI Component Guidelines
-*   **Buttons:** Standardized border-radiuses, hover state outlines, and primary vs. secondary ghost styling.
-*   **Cards:** Border widths, subtle shadows, and light/dark theme structural borders.
+- **Primary (#1A1C1E):** Deep ink used for headlines and core text surfaces.
+- **Secondary (#6C7278):** Sophisticated slate used for borders, subtle captions, and metadata.
+- **Tertiary (#B8422E):** Earthy red driver for primary action item highlights.
+- **Neutral (#F7F5F2):** Warm limestone layer foundational for all page backgrounds.
 
-## 4. Social Media Asset Standards & Typography (Cross-Channel)
+## Typography
 
-All generated static, carousel, or motion graphics must comply with platform-specific safe-zone dimensions and robust, high-contrast typography rules to prevent copy from being obscured or unreadable on mobile screens.
+Leverages Public Sans across clean geometric line heights.
 
-### 4.1. Font Translation Strategy
-*   **Thicker Weight Enforcement:** To survive aggressive feed-based JPEG/MP4 compression artifacts on mobile, avoid thin or hairline font cuts for social graphics.
-*   **Conversion Standard:** If the primary brand body font is lighter than 400 weight (Regular), translate the text to a thick, high-impact neo-grotesque or geometric sans-serif (such as `typography.social.font_family_fallback` at 700+ weight) for social templates.
+- **Headlines:** Set in Bold variants to maximize visual importance.
+- **Body:** Regular variants utilizing a clean 1.6 multiplier to ensure structural readability.
 
-### 4.2. Social Scale Matrix
-*   **Hero Hook:** `96px` | Line-height `1.0` | Weight `900` — For giant single-sentence quotes, shocking statements, or massive stats on text-only intro slides.
-*   **Main Headline:** `64px` | Line-height `1.1` | Weight `800` — For standard multi-slide covers, core visual hooks, and title graphics.
-*   **Subhead / Body:** `32px` | Line-height `1.4` | Weight `500` — For concise supporting details, bullets, or highly digestible callout sentences.
-*   **Micro-Meta:** `20px` | Line-height `1.2` | Weight `700` — For brand handles (@username), clean CTA buttons, page cues, and corporate URLs.
+## Layout
 
-### 4.3. Legibility & Contrast Rules (Mobile-First)
-1. **The 30-Word Limit:** To ensure comfortable viewing on outdoor mobile displays, limit a single slide’s content to a maximum of 30 words. If the message is longer, split it into a carousel slide progression.
-2. **Double-Contrast Rule (WCAG AAA / Outdoor):** Do not rely on color contrast alone. Multi-line headers must maintain a minimum color contrast ratio of 7:1 against background canvases (complying with WCAG AAA under direct sunlight environments). If complex backgrounds or dynamic color blends are used, use an inline high-contrast backing block or dark visual vignette beneath the text block.
-3. **Line-Height Bounds:** To avoid text-clashing on wrapped mobile screens, multi-line headers (`Hero Hook` and `Main Headline`) must strictly observe a minimum line-height of `1.0` and a maximum of `1.2`. Any spacing wider than `1.2` degrades vertical safe zones and causes layout overflows.
+The layout uses a strict 8px spacing scale framework to manage padding, structural alignment, and gutter parameters.
 
-### 4.4. Dynamic Safe-Zones & Margins
-*   **Instagram & Facebook Stories/Reels (9:16):** 
-    *   *Top Safe-Zone Margin:* Keep the top **220px** completely free of critical copy (reserved for profile avatars and platform icons).
-    *   *Bottom Safe-Zone Margin:* Keep the bottom **310px** free of text overlays (reserved for engagement buttons, caption text, and sound indicators).
-    *   *Grid Preview (3:4 Ratio):* Ensure key content on Reels fits within the center **1080x1440px** space so it looks correct on profile grids.
-*   **TikTok (9:16 Video Overlays):**
-    *   *Right Margin Safe-Zone:* Leave a **120px** margin on the right side to prevent text from sliding under the engagement buttons (Like, Comment, Share).
-    *   *Bottom Safe-Zone:* Reserve the bottom **350px** for the creator's username and video description wrapper. Keep primary text positioned strictly in the upper-middle quadrant of the screen.
-*   **LinkedIn & Instagram Carousels (4:5 Portrait):**
-    *   Apply a uniform **10% padding** (108px) around all edges. 
-    *   Ensure the "Page Number indicator" (e.g., "3/5") or swipe cue arrows have a dedicated line at the bottom center.
+## Elevation & Depth
 
-### Visual Style Prompts
-*   *Grid Abstract:* "[Provide a precise, high-contrast prompt formula for image generation]"
-*   *Warm Gradient:* "[Provide a precise gradient/lighting prompt formula]"
+Depth is conveyed using clean tonal background shifting and solid contrast borders rather than explicit shadows.
 
-### Copy & Hook Guidelines
-*   **Formatting:** Use a single sentence hook, generous spacing, and a maximum of 2 emojis per post.
-*   **CTA Placement:** Place the primary goal on the final carousel slide or at the end of the caption text.
+## Shapes
 
-## 5. Layout Guardrails
-*   **Localization Margin:** Ensure all flexbox layouts handle layout expansion (such as French translation expansion factors) safely without hardcoding widths.
+Components leverage minimal 4px edge roundness to establish an intentional, structural layout rhythm.
 
-## 6. Do's and Don'ts
-*   **DO** keep key text in 9:16 layouts centered within the 1080x1350 vertical envelope.
-*   **DO** preserve design system colors across all social formats.
-*   **DON'T** let text crawl near the top and bottom quarters of mobile canvases where native UI tags overlap.
-*   **DON'T** use multi-color background patterns directly behind small text layers.
+## Components
+
+### Buttons
+
+Primary call-to-actions adapt full background fills inherited from structural token pairs.
+
+## Do's and Don'ts
+
+- Do maintain WCAG AA contrast ratios (4.5:1 for standard body text variations).
+- Do use the primary highlight exclusively for major user actions.
+- Don't mix sharp elements and organic heavy corner behaviors within a single screen.
 ```
 
-## 3. Human-In-The-Loop Approval (Guardrails)
-- Before executing the final file-writes, output a clean, summarized terminal diff of the changes (tokens updated, assets downloaded, and version changes) for user review. This step is informational and does not halt programmatic execution.
+---
 
-- Output Protocol (On Write Success): Provide the user with clear, actionable copy-paste terminal outputs containing the exact local paths. Use this exact output format:
+## Validation Protocol
 
-```markdown
-SUCCESS: Design system successfully codified.
+Immediately following document generation, validity must be verified by invoking the official Google Labs parser tool
+locally via the CLI shell:
 
-📂 Markdown Source:
-[home-directory]/workspace/design/DESIGN.md
-
-🖥️ Interactive HTML Preview
-[home-directory]/workspace/design/preview.html
+```bash
+npx -y @google/design.md lint [home-directory]/DESIGN.md
 ```
+
+### Error Mitigation Tree
+
+- **Duplicate Section Heading:** Fail file generation immediately. Merge the duplicate context fragments into a single
+  sequential heading block.
+
+- **Unknown Component Property:** Accept but issue an immediate warning flag outlining the custom property used.
+
+- **Broken References:** If a linting loop reports an unmapped component path token (e.g., {colors.brand} does not
+  exist), rebuild the primary YAML token block to include the missing variable anchor.
+
+

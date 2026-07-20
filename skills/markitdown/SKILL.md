@@ -5,7 +5,7 @@ description: |
     It supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML,  YouTube transcripts and Images (using OCR).
 ---
 
-# SΩkill: markitdown
+# Skill: markitdown
 
 Documentation and utilities for converting documents to Markdown using
 Microsoft's [MarkItDown](https://github.com/microsoft/markitdown) library.
