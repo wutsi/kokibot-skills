@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images using HTML/CSS templates rendered via a headless browser.
+description: Automates the creation of high-quality, platform-specific, brand-compliant images by generating a self-contained Playwright automation script.
 metadata:
     categories:
         - design
@@ -11,9 +11,9 @@ metadata:
 ## Overview
 
 This skill automates the creation of high-quality, platform-specific social media post images. By reading a central
-design system, dynamically injecting user-provided copy and assets into an HTML template based on the platform and
-placement type, and rendering it via a headless browser, this skill ensures perfectly scaled, on-brand visual assets
-ready for publication.
+design system, dynamically injecting user-provided copy and assets into an HTML string based on the platform
+specifications, and wrapping it in an executable Playwright script, this skill outputs a fully automated rendering
+blueprint ready for immediate system execution.
 
 ---
 
@@ -49,11 +49,12 @@ preserving strict brand identity.
 
 ## Validation & Conflict Resolution
 
-Before rendering, cross-reference the `Target platform` and `Placement type` with the specifications matrix below.
+Before building the asset structure, cross-reference the `Target platform` and `Placement type` with the specifications
+matrix below.
 
-* If a requested combination is **invalid** (e.g., TikTok `link_preview`), the system must default to the `feed`
-  specification for that platform.
-* If the platform does not have a `feed` specification, default to a standard square layout (1080 x 1080 px).
+* If a requested combination is **invalid** (e.g., TikTok `link_preview`), default to the `feed` specification for that
+  platform.
+* If the platform does not have a designated `feed` specification, default to a standard square layout (1080 x 1080 px).
 
 ---
 
@@ -61,9 +62,9 @@ Before rendering, cross-reference the `Target platform` and `Placement type` wit
 
 The container bounds and dimensions must be dynamically determined using the matrix below.
 
-> **Important (Safe Zones):** For all vertical video formats (`story` and `reel_cover`), the HTML/CSS template must
-> center text and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't
-> blocked by native social media app UI elements (like profiles, captions, or interactable buttons).
+> **Important (Safe Zones):** For all vertical video formats (`story` and `reel_cover`), the template must center text
+> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by native
+> social media app UI elements (like profiles, captions, or interactable buttons).
 
 ### 1. Instagram (`instagram`)
 
@@ -104,48 +105,78 @@ The container bounds and dimensions must be dynamically determined using the mat
 
 ## Execution Protocol
 
-Execute these actions in strict sequential order:
+Execute these actions in strict sequential order. Do not loop or re-draft code once generated.
 
-1. **Read Design System**
-    * Access and parse the central design system configuration file.
-    * Extract authorized brand assets including font families, font weights, primary/secondary color palettes, and
-      global padding rules to ensure absolute visual brand compliance.
+### Step 1: Read Design System
 
-2. **Generate the Post in HTML (with Defensive Layouts & Overflow Protection)**
-    * Dynamically compile a self-contained HTML/CSS file.
-    * Determine the container's width and height based on the evaluated combination of `Target platform` and
-      `Placement type`.
-    * Inject the extracted brand typography and layout variables from Step 1.
-    * **Strict Content Mapping (No Assumptions):** Map the provided values (`Hook`, `Headline`, `Sub Head`, `CTA`,
-      `Background Image`) to their respective text blocks.
-        * Do **not** generate placeholder text, imply, or hallucinate content for `Headline`, `Sub Head`, `CTA` or
-          `Background Image` if they are omitted from the input parameters.
-        * If an optional parameter (`Headline`, `Sub Head`, or `CTA`) is absent or empty, completely exclude or
-          conditionally hide its corresponding HTML element box from the DOM template so it occupies zero space in the
-          visual layout.
-    * Map the `Hook`, `Headline`, `Sub Head`, and `CTA` values to their respective text blocks.
-    * **Safe Zone Enforcement:** For 9:16 formats (`story`, `reel_cover`), wrap all copy and core text elements within a
-      nested overlay container structurally constrained to the central 1080 x 1350 px visual bounding box (e.g., via
-      padding or dedicated flex-containers) to strictly avoid UI collision.
-    * **Text Overflow Handling:** Enforce defensive typography styling to prevent clipping or canvas breakages when long
-      copy is passed:
-        * Apply `word-wrap: break-word;` and `overflow-wrap: break-word;` to all text containers.
-        * Use `clamp()` or fluid typography rules based on container height to scale font sizes dynamically.
-        * For explicit headline or hook blocks where layout boundaries are rigid, enforce standard truncation mechanics
-          using line-clamping CSS properties (e.g.,
-          `-webkit-line-clamp: 3; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;`).
-    * **Image & Canvas Asset Handling:** Set `box-sizing: border-box;` globally on all elements. Ensure parent canvas
-      containers strictly enforce `overflow: hidden;` to catch any rogue element drift. Apply the
-      `Path to background image` asset as a CSS background property configured with `background-size: cover;` and
-      `background-position: center;` to avoid visual distortion.
+* Access and parse the central design system configuration file.
+* Extract authorized brand assets including font families, font weights, primary/secondary color palettes, and global
+  padding rules to ensure absolute visual brand compliance.
 
-3. **Use Playwright to Take a Screenshot**
-    * Launch a headless browser instance using **Playwright**.
-    * Load the compiled HTML file, pausing briefly to guarantee all external fonts, weights, and high-resolution
-      background assets are completely loaded.
-    * Take a high-fidelity screenshot targeting the primary container element bounding box.
-    * Save the final image format file into the project's designated media directory.
+### Step 2: Compile the Asset HTML & CSS
 
-4. **Return System Message**
-    * Upon successful image generation, return the final path response exactly matching this structure: "Asset
-      generated: [image_full_path]"
+* Dynamically compile a single self-contained HTML payload containing all structure and explicit inline CSS.
+* **Strict Content Mapping (No Assumptions):** Map the provided values (`Hook`, `Headline`, `Sub Head`, `CTA`,
+  `Background Image`) to their respective text blocks. Do **not** generate placeholder text or hallucinate content for
+  omitted optional parameters. Completely hide or exclude empty parameter elements from the DOM so they occupy zero
+  space.
+* **Safe Zone Enforcement:** For 9:16 formats (`story`, `reel_cover`), wrap all copy within an overlay container
+  structurally constrained to the central 1080 x 1350 px visual bounding box using padding or flex alignment rules.
+* **Defensive Layout Constraints:** Apply `word-wrap: break-word;` and `overflow-wrap: break-word;` to all text boxes.
+  Force dynamic truncation using line-clamping CSS (e.g., `-webkit-line-clamp: 3;`) on headers to guarantee text cannot
+  break or expand past the canvas boundaries. Ensure `box-sizing: border-box;` is applied globally.
+
+### Step 3: Integrate into Playwright Script Engine
+
+* Embed the complete HTML code generated in Step 2 directly into an executable Node.js Playwright script template.
+* Dynamically inject the calculated pixel `width` and `height` properties extracted from the specifications matrix
+  directly into the script's browser viewport configuration object.
+* Configure a defensive network lifecycle event (`networkidle`) right after setting page content to ensure external
+  brand web-fonts or network images load fully prior to snapshot creation.
+
+### Step 4: Output Execution Payload
+
+* Deliver the output by generating the exact JavaScript code block structure detailed below. Do not append
+  conversational chat text, instructions, or follow-up questions after outputting this block. Stop generating
+  immediately.
+
+```javascript
+const { chromium } = require('playwright');
+const fs = require('fs');
+
+(async () => {
+  // Target Specification: [Insert Target Platform] - [Insert Placement Type]
+  const width = [Insert Evaluated Width];
+  const height = [Insert Evaluated Height];
+  const outputPath = 'output/asset_[UniqueId].png';
+
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width, height } });
+  const page = await context.newPage();
+
+  // Self-contained compiled HTML payload string
+  const htmlContent = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      /* Compiled brand system CSS goes here */
+    </style>
+  </head>
+  <body>
+    <!-- Compliant structured visual content goes here -->
+  </body>
+  </html>
+  `;
+
+  await page.setContent(htmlContent);
+  await page.waitForLoadState('networkidle');
+
+  // Ensure target folder space path exists
+  if (!fs.existsSync('output')) fs.mkdirSync('output', { recursive: true });
+
+  await page.screenshot({ path: outputPath, type: 'png' });
+  await browser.close();
+
+  console.log(`Asset generated: ${outputPath}`);
+})();
