@@ -116,6 +116,13 @@ Execute these actions in strict sequential order:
     * Determine the container's width and height based on the evaluated combination of `Target platform` and
       `Placement type`.
     * Inject the extracted brand typography and layout variables from Step 1.
+    * **Strict Content Mapping (No Assumptions):** Map the provided values (`Hook`, `Headline`, `Sub Head`, `CTA`,
+      `Background Image`) to their respective text blocks.
+        * Do **not** generate placeholder text, imply, or hallucinate content for `Headline`, `Sub Head`, `CTA` or
+          `Background Image` if they are omitted from the input parameters.
+        * If an optional parameter (`Headline`, `Sub Head`, or `CTA`) is absent or empty, completely exclude or
+          conditionally hide its corresponding HTML element box from the DOM template so it occupies zero space in the
+          visual layout.
     * Map the `Hook`, `Headline`, `Sub Head`, and `CTA` values to their respective text blocks.
     * **Safe Zone Enforcement:** For 9:16 formats (`story`, `reel_cover`), wrap all copy and core text elements within a
       nested overlay container structurally constrained to the central 1080 x 1350 px visual bounding box (e.g., via
