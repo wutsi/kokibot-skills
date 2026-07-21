@@ -1,6 +1,6 @@
 ---
 name: pandoc
-description: This skill should be used when converting documents between formats (Markdown, DOCX, PDF, HTML, LaTeX, etc.) using pandoc. Use for format conversion, document generation, and preparing markdown for Google Docs or other word processors.
+description: Use when converting documents between formats (Markdown, DOCX, PDF, HTML, LaTeX, etc.), generating presentations (Beamer, reveal.js), handling citations/bibliographies, or preparing markdown for Google Docs or other word processors.
 metadata:
     categories:
         - core
@@ -32,16 +32,16 @@ Automatically invoke this skill when the user:
 
 ## Usage Guide
 
-The syntax for the `markitdown` CLI is straightforward:
+The syntax for the `pandoc` CLI is straightforward:
 
 ```bash
-pandoc <input> [options] -o <output>.md
+pandoc <input> [options] -o <output>
 ```
 
 Where
 
-- `<input>` can be a file path, URL, or piped content.
-- The `-o` flag specifies the output markdown file.
+- `<input>` can be a file path or URL.
+- The `-o` flag specifies the output file; pandoc infers the format from its extension (override with `-t`).
 
 ### File Conversions Examples
 
@@ -60,7 +60,36 @@ pandoc input.md --reference-doc=template.docx -o output.docx
 
 # Standalone with metadata
 pandoc input.md -s --metadata title="Document Title" -o output.docx
+
+# Convert into Markdown (reverse direction)
+pandoc input.docx -o output.md
+pandoc input.html -o output.md
+
+# With citations/bibliography
+pandoc input.md --citeproc --bibliography=refs.bib -o output.pdf --pdf-engine=tectonic
+
+# Presentation slides
+pandoc slides.md -t beamer -o slides.pdf --pdf-engine=tectonic
+pandoc slides.md -t revealjs -s -o slides.html
 ```
+
+### Quick Reference
+
+| Task                        | Command                                                              |
+|------------------------------|-----------------------------------------------------------------------|
+| Markdown → DOCX/PDF/HTML     | `pandoc input.md -o output.<ext>`                                     |
+| DOCX/HTML → Markdown         | `pandoc input.<ext> -o output.md`                                     |
+| Citations & bibliography     | `pandoc input.md --citeproc --bibliography=refs.bib -o output.pdf`    |
+| Beamer / reveal.js slides    | `pandoc slides.md -t beamer\|revealjs -o slides.<ext>`                 |
+
+---
+
+## Common Mistakes
+
+- Forgetting `--pdf-engine=tectonic` on PDF output — pandoc defaults to `pdflatex`, which is not installed, and fails
+  with a confusing "pdflatex not found" error.
+- Expecting citations to render without `--citeproc` — pandoc leaves citation keys (e.g. `[@key]`) unprocessed unless
+  it's passed.
 
 ---
 
