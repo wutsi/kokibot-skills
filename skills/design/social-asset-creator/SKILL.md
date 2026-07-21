@@ -1,6 +1,6 @@
 ---
 name: social-asset-creator
-description: Automates the creation of high-quality, platform-specific, brand-compliant images and multi-slide carousels across Facebook, Instagram, WhatsApp, TikTok, LinkedIn, and YouTube by executing Playwright CLI commands that output a plain-text summary list containing the absolute full file paths of created assets.
+description: Use when generating platform-specific social media images or multi-slide carousels for Facebook, Instagram, WhatsApp, TikTok, LinkedIn, or YouTube that must match exact pixel dimensions, safe zones, and brand fonts/colors — for feed posts, stories, reel covers, link previews, carousel slides, or video thumbnails.
 metadata:
     categories:
         - design
@@ -141,24 +141,35 @@ Execute these actions in strict sequential order. Do not loop or re-draft code o
 
 ### Step 0: Environment Pre-Check (Dependency Validation)
 
-Before generating templates or staging assets, verify that playwright-cli is installed and accessible in the system
-environment. If the binary is missing, immediately halt execution and print an explicit error message.
+Before generating templates or staging assets, run `scripts/check_env.sh`. It verifies `playwright-cli` is installed
+and accessible, halting execution with an explicit error if the binary is missing.
 
-```markdown
-if ! command -v playwright-cli &> /dev/null; then
-echo "Error: playwright-cli is not installed or not found in PATH." >&2
-echo "Please install Playwright CLI before running this skill (e.g., npm install -g @playwright/cli@latest)." >&2
-exit 1
-fi
+```bash
+scripts/check_env.sh
 ```
 
 ### Step 1: Read Design System
 
-* Access and parse the central design system configuration file.
-* Extract authorized brand assets including font families, font weights, primary/secondary color palettes, and global
-  padding rules.
+* Read `[home-directory]/DESIGN.md` (YAML frontmatter + Markdown body, per the `design-md-creator` skill's contract).
+* Extract authorized brand assets from the YAML frontmatter: `typography` (font families, weights), `colors`
+  (primary/secondary/tertiary/neutral), and `spacing` (global padding rules).
+* If `DESIGN.md` does not exist, halt execution and print an explicit error asking the user to run the
+  `design-md-creator` skill first.
 
-### Step 2: Generate the HTML
+### Step 2: Stage Background Images
+
+Generate a unique asset ID as `asset_[YYYYMMDDHHMMSS]`, using the current UTC timestamp from the system clock (e.g.
+`date -u +%Y%m%d%H%M%S`), and create its output directory: `[home-directory]/workspace/output/asset_[UniqueId]/`.
+
+For each slide with a *Path to background image*, run `scripts/stage_background.sh` to download (if remote) or copy
+(if local) it into the asset directory, preserving its original file extension. The script prints the resulting
+absolute local path — reference that path (not the original remote URL or path) when building the HTML in Step 3.
+
+```bash
+scripts/stage_background.sh "[path-or-url]" "[home-directory]/workspace/output/asset_[UniqueId]" [slide-index]
+```
+
+### Step 3: Generate the HTML
 
 For each slide in the slides data array, generate a self-contained HTML file (
 `[home-directory]/workspace/output/asset_[UniqueId]/temp_slide_N.html`)
@@ -189,30 +200,12 @@ The HTML structure for each slide should follow this template:
 </html>
 ```
 
-### Step 3: Output Execution Payload & Return Asset Location
+### Step 4: Output Execution Payload & Return Asset Location
 
-* Run sequence of `playwright-cli` commands to open each slide template, resize the viewport to the target
-  specification,
-  capture a pristine PNG screenshot, and close the session.
-* Log the absolute full file path location of the created asset(s) to stdout.
+Run `scripts/render_assets.sh` once. It renders every `temp_slide_N.html` in the asset directory to `slide_N.png` at
+the target platform dimensions (via `playwright-cli open → resize → screenshot → close`, one cycle per slide) and
+prints the required plain-text summary of absolute full asset paths to stdout.
 
 ```bash
-# 1. Open the first slide template file in Playwright CLI
-playwright-cli open file://[home-directory]/workspace/output/asset_[UniqueId]/temp_slide_1.html
-
-# 2. Resize viewport to match target platform dimensions (e.g., width x height)
-playwright-cli resize [Insert Evaluated Width] [Insert Evaluated Height]
-
-# 3. Take screenshot and save to final absolute asset path
-playwright-cli screenshot --filename=[home-directory]/workspace/output/asset_[UniqueId]/slide_1.png
-
-# 4. Close session when finished or move to next tab/file
-playwright-cli close
-
-# Repeat for subsequent slides as necessary, then clean up temporary HTML files:
-rm [home-directory]/workspace/output/asset_[UniqueId]/temp_slide_*.html
-
-# Output plain text summary list containing absolute full image paths
-echo "n asset(s) generated:"
-echo "- $(pwd)/output/asset_[UniqueId]/slide_1.png"
+scripts/render_assets.sh "[home-directory]/workspace/output/asset_[UniqueId]" [Insert Evaluated Width] [Insert Evaluated Height]
 ```

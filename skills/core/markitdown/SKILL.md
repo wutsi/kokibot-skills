@@ -3,6 +3,9 @@ name: markitdown
 description: |
     Converts documents to Markdown so that an LLM can understand the content easily.
     It supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML,  YouTube transcripts and Images (using OCR).
+metadata:
+    categories:
+        - core
 ---
 
 # Skill: markitdown
