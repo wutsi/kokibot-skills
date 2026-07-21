@@ -75,12 +75,12 @@ pandoc slides.md -t revealjs -s -o slides.html
 
 ### Quick Reference
 
-| Task                        | Command                                                              |
-|------------------------------|-----------------------------------------------------------------------|
-| Markdown → DOCX/PDF/HTML     | `pandoc input.md -o output.<ext>`                                     |
-| DOCX/HTML → Markdown         | `pandoc input.<ext> -o output.md`                                     |
-| Citations & bibliography     | `pandoc input.md --citeproc --bibliography=refs.bib -o output.pdf`    |
-| Beamer / reveal.js slides    | `pandoc slides.md -t beamer\|revealjs -o slides.<ext>`                 |
+| Task                      | Command                                                            |
+|---------------------------|--------------------------------------------------------------------|
+| Markdown → DOCX/PDF/HTML  | `pandoc input.md -o output.<ext>`                                  |
+| DOCX/HTML → Markdown      | `pandoc input.<ext> -o output.md`                                  |
+| Citations & bibliography  | `pandoc input.md --citeproc --bibliography=refs.bib -o output.pdf` |
+| Beamer / reveal.js slides | `pandoc slides.md -t beamer\|revealjs -o slides.<ext>`             |
 
 ---
 
