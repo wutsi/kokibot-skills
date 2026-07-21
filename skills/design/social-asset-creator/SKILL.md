@@ -15,6 +15,16 @@ system, stages background images into the local workspace, injects copy into per
 renders via the **Playwright CLI (`playwright-cli`)**. Prints a plain-text list of absolute file paths to all
 generated assets on `stdout` — downstream scripts must parse `stdout` to locate the rendered files.
 
+## Prerequisites
+
+Check first: `command -v playwright-cli`. If it's missing:
+
+- **npm-managed Node (nvm, brew, fnm, etc.):** `npm install -g @playwright/cli@latest` — no elevated privileges
+  needed, safe to run directly.
+- **System Node (npm requires `sudo` to install globally):** requires `sudo npm install -g @playwright/cli@latest`.
+  Do not run `sudo` commands yourself — show the command to the user and ask them to run it in their own terminal,
+  then continue once they confirm `playwright-cli` is installed.
+
 ## When to Use
 
 * Adapting the same copy/background into multiple platform aspect ratios at once (no manual cropping).
