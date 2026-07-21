@@ -1,174 +1,63 @@
 ---
 name: "design-md-creator"
-description: "Generates or updates a machine-readable design contract file (DESIGN.md) containing product UI specs, mandatory local brand assets (logos/backgrounds only), specialized social typography scales, and cross-channel social media templates."
+description: "Use when creating or updating a DESIGN.md design-token file — triggers on UI/design-system prompts, a live website URL or CSS file to extract tokens from, an uploaded .pptx brand deck, or a request to update/iterate on an existing DESIGN.md."
 metadata:
     categories:
         - design
 ---
 
-# Skill: design-md-creator
+# design-md-creator
 
 ## Overview
 
-This skill systematically constructs a unified, production-ready `DESIGN.md` file based on a brand concept, user
-description, or UI prompt. The generated file bridges human-readable design rationale with machine-readable design
-tokens using a hybrid YAML/Markdown structure.
+Builds/updates `[home-directory]/DESIGN.md`: a YAML-frontmatter + Markdown file capturing a brand's design tokens
+(colors, typography, spacing, components) and the prose rationale behind them. Spec:
+[Google Labs DESIGN.md](https://github.com/google-labs-code/design.md/blob/main/docs/spec.md) v0.0.1.
 
-- Specification
-  Authority: [Google Labs DESIGN.md Spec](https://github.com/google-labs-code/design.md/blob/main/docs/spec.md)
-- **Current Spec Version:** `0.0.1`
+## Rules
 
----
+1. Read/write only `[home-directory]/DESIGN.md`. Never a temp path, cwd, or alternate name.
+2. Version: no existing file → `1.0.0`; token-value-only edit → bump patch; structural change (added/removed section
+   or component) → bump minor. Read the existing file first to know the current version.
+3. Output = YAML frontmatter (tokens) + Markdown body (rationale), always both.
+4. Markdown `##` sections must appear in this exact order, omitting any with no data — never reorder/duplicate:
+   Overview (or Brand & Style) → Colors → Typography → Layout (or Layout & Spacing) → Elevation & Depth (or
+   Elevation) → Shapes → Components → Do's and Don'ts.
+5. Hex as `#RRGGBB`/`#RRGGBBAA`; every dimension has a CSS unit (`px`/`em`/`rem`); quote hex codes and signed/unit
+   values (`"-0.02em"`) to avoid YAML parse errors; reference tokens as `"{colors.primary}"`.
+6. Never use `web_fetch`/`WebFetch` for token extraction — it summarizes pages through markdown conversion and
+   drops/paraphrases `<style>` blocks, which can silently report "no tokens found" on pages that have real CSS. Use
+   `curl`/`wget` instead.
+7. Flatten component states as sibling keys — `button-primary`, `button-primary-hover` — never nested.
 
-## When to Use This Skill
+## Workflow
 
-This skill is automatically triggered when the system detects any of the following user actions or inputs:
+1. Read `[home-directory]/DESIGN.md` if it exists, to get the current version baseline.
+2. Ingest input by type:
+    - **URL:** `curl`/`wget` the page, then also fetch any `<link rel="stylesheet">` target — tokens often live only
+      in the linked CSS. No `curl`/`wget` available → abort with
+      `[ERROR] No compatible web fetch tool available to retrieve live page content. Aborting design generation.`
+    - **.pptx:** use an available extraction tool/skill to dump text/shape/slide data. None available → abort with
+      `[ERROR] No compatible tool or skill available to process .pptx files. Aborting design generation.`
+    - **Update request:** diff the new input against the existing file's content.
+3. Map extracted values into the schema: `colors` (primary/secondary/tertiary/neutral), `typography` (levels with
+   `fontFamily`/`fontSize`/`fontWeight`/`lineHeight`/`letterSpacing`), `spacing`/`rounded` (`xs`–`full` scale),
+   `components`.
+4. Bump `version` per rule 2.
+5. Write the Markdown body per rule 4, keeping prose color/type names traceable to their token keys.
 
-- **UI Design Prompts:** Explicit text descriptions requesting the creation of a design system, style guide, layout, or
-  UI token schema.
-- **Live URL Submissions:** When a user provides a live website link or an explicit path to a CSS stylesheet file for
-  visual extraction.
-- **Presentation File Uploads:** When a user uploads or references a PowerPoint presentation file (.pptx) containing
-  brand layouts or design schemas.
-- **Design Delta Updates:** Requests to update, iterate on, or modify an existing DESIGN.md file located in the target
-  directory.
+## Common Mistakes
 
----
+| Mistake                                     | Fix                                              |
+|---------------------------------------------|--------------------------------------------------|
+| Using `web_fetch`/`WebFetch` on a URL       | `curl`/`wget` raw HTML instead (rule 6).         |
+| Fetching only the page HTML                 | Also fetch linked `<link rel="stylesheet">` CSS. |
+| Unquoted hex/dimension values in YAML       | Quote them (rule 5).                             |
+| Nesting `hover`/`active` under a parent key | Flat sibling keys (rule 7).                      |
+| Reordering/duplicating `##` sections        | Fixed order, omit missing (rule 4).              |
+| Skipping the version bump                   | Always bump per rule 2.                          |
 
-## Core System Directives
-
-### 1. File Storage Location
-
-* **Strict Target Path:** The resulting file must always be read from and written directly to
-  `[home-directory]/DESIGN.md`. Do not write to temporary subdirectories or alternative file names.
-
-### 2. Version Incrementing Rule
-
-* **State Preservation:** Before attempting an increment, the agent must ensure the contents of the existing
-  `[home-directory]/DESIGN.md` (if any) have been explicitly read into the current context window.
-* **Semantic Iteration:**
-    * If updating an existing custom layout version string, increment its value appropriately (e.g., `1.0.0` becomes
-      `1.0.1`, or append an incremental revision count).
-
-### 3. Dual-Nature Output Requirement
-
-Every generated file must consist of exactly two parts:
-
-* **YAML Frontmatter:** Machine-readable design tokens mapping colors, typography, spacing, shapes, and component
-  overrides.
-* **Markdown Body:** Human-readable prose explaining the design choices and styling guardrails using strict `##` header
-  sequences.
-
-### 4. Strict Sequence Constraint
-
-Markdown sections cannot be reordered, duplicated, or interleaved. If data for a section is missing or irrelevant, omit
-the section entirely. The parsed output sequence must strictly be:
-
-1. `---` YAML Frontmatter Delimiters
-2. `## Overview` (Alternative allowed: `## Brand & Style`)
-3. `## Colors`
-4. `## Typography`
-5. `## Layout` (Alternative allowed: `## Layout & Spacing`)
-6. `## Elevation & Depth` (Alternative allowed: `## Elevation`)
-7. `## Shapes`
-8. `## Components`
-9. `## Do's and Don'ts`
-
-### 5. Syntax Rules
-
-* **Color Formats:** Hex notation (`#RRGGBB` or `#RRGGBBAA`) is the default standard for tool compliance.
-* **Dimension Scales:** Suffix all sizes with valid CSS units (`px`, `em`, `rem`).
-* **Quotation Guardrails:** Always wrap Hex codes (`"#1A1C1E"`) and dimensions with symbols or negative numbers (e.g.,
-  `letterSpacing: "-0.02em"`) in double quotes to prevent YAML parsing crashes.
-* **Token References:** Cross-reference primitive tokens inside the `components` block using curly braces and object
-  pathing: `"{colors.primary}"`.
-
-### 6. Strict Tool Blacklist
-
-* **Global Web Fetch Ban:** Under no circumstances should the `web_fetch` tool or any high-level automated web scraping
-  plugins be invoked during execution. All external web retrieval tasks must pass through local sandbox commands (
-  `curl`, `wget`) as specified in the operational pathways.
-
----
-
-## Operational Execution Loop
-
-### Step 1: Context Ingestion & Baseline Scan
-
-1. **Read Existing State First:** Before parsing any incoming external assets or source payloads, the agent MUST
-   explicitly read `[home-directory]/DESIGN.md` (if it exists) to extract the current `version` or `revision` tokens.
-   This preserves the state baseline before token noise from external data enters the context window.
-2. **Execute Routing Pathway:** Once the baseline version metadata is secured, proceed to extract active design
-   requirements from the designated pathway below:
-
-#### Pathway A: Live Web Page URL
-
-**!!! SYSTEM CONSTRAINTS & TOOL RESTRICTIONS !!!**
-
-* **NEVER USE THE `web_fetch` TOOL:** Under no circumstances should you invoke `web_fetch` or any automated
-  markdown-parsing web tools when a URL is provided.
-* **MANDATORY ALTERNATIVE:** You must fetch raw website content or download assets exclusively by running `curl`,
-  `wget`, or equivalent terminal commands inside your execution sandbox. This task requires raw source material and
-  binary asset streams which high-level fetch tools strip away or fail to save.
-* If the environment lacks a local `curl` or `wget` binary, output the error message:
-  `[ERROR] No compatible web fetch tool available to retrieve live page content. Aborting design generation.` and
-  terminate execution immediately.
-
-If the user provides a website link:
-
-1. Use `curl` or `wget` to fetch the web page or the provided raw stylesheets (`.css`) directly.
-2. If relying on text extraction, isolate dominant palette hex values, declared font-family names, and structural
-   spacing configurations. Avoid parsing raw, minified single-line JavaScript strings.
-
-#### Pathway B: PowerPoint Deck Layout File
-
-If the user provides a `.pptx` file
-
-1. **Tool Verification:** Verify the availability of local parser tools, document extraction engines, or presentation
-   processing skills. **CRITICAL:** If no dedicated layout extraction or text conversion tools are available in the
-   current environment, output the error message:
-   `[ERROR] No compatible tool or skill available to process .pptx files. Aborting design generation.` and terminate
-   execution immediately.
-2. If available, invoke the extraction pipeline to dump text metadata blocks, shape schemas, and slide structures.
-3. Review the structural data to build the design baseline.
-
-*Baseline System Scan:* If ingestion succeeds, check `[home-directory]/DESIGN.md` for a legacy token baseline to
-cross-reference previous structural versions.
-
-### Step 2: Extract Design Input & Delta Processing
-
-Analyze the delta between the raw incoming user prompt and the ingested system context. Isolate the target updates (
-e.g., changing a primary color hex vs. appending a new social template component block).
-
-### Step 3: Formulate the Token Schema & Increment Version
-
-Calculate the new incremented version or revision code based on the ingested file state. Map configurations directly
-into the YAML schema layout format:
-
-* Include the freshly updated version or `revision: <integer>` identifier tracking parameters.
-* `colors`: `primary`, `secondary`, `tertiary`, `neutral`.
-* `typography`: Level mappings containing `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, and `letterSpacing` (
-  including custom social media scaling arrays).
-* `spacing` & `rounded`: Sizing scales using logical keys (`xs`, `sm`, `md`, `lg`, `xl`, `full`).
-* `components`: Standard components and custom cross-channel social templates, matching structural token rules.
-
-### Step 4: Handle Component Aliases & Variants
-
-Map atomic styles to standard component states flatly.
-
-* *Note:* Never nest interactive states under a parent key. Use sequential sibling keys: `button-primary`,
-  `button-primary-hover`, and `button-primary-active`.
-
-### Step 5: Write Descriptive Prose Sections
-
-Draft clean documentation within the strict markdown layout sequence. Ensure descriptive color names used in the prose
-map explicitly back to token keys.
-
----
-
-## Code Reference Layout
-
-When executing this skill, your final text output must match this exact blueprint structural shape:
+## Example
 
 ```markdown
 ---
@@ -177,77 +66,59 @@ name: "Daylight Prestige"
 description: "A high-contrast professional interface layout."
 colors:
   primary: "#1A1C1E"
-  secondary: "#6C7278"
-  tertiary: "#B8422E"
   neutral: "#F7F5F2"
 typography:
-  headline-md:
-    fontFamily: "Public Sans"
-    fontSize: "32px"
-    fontWeight: 600
-    lineHeight: 1.2
   body-md:
     fontFamily: "Public Sans"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.6
 spacing:
-  sm: "8px"
   md: "16px"
 rounded:
   sm: "4px"
-  md: "8px"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.neutral}"
     rounded: "{rounded.sm}"
-    padding: "12px"
   button-primary-hover:
-    backgroundColor: "{colors.secondary}"
+    backgroundColor: "{colors.neutral}"
 ---
 
 ## Overview
 
-The design system defines the visual identity of a premium workspace platform. It targets deep professional density.
+Premium workspace platform targeting deep professional density.
 
 ## Colors
 
-The palette is rooted in high-contrast neutrals and a single crisp interaction highlight.
-
-- **Primary (#1A1C1E):** Deep ink used for headlines and core text surfaces.
-- **Secondary (#6C7278):** Sophisticated slate used for borders, subtle captions, and metadata.
-- **Tertiary (#B8422E):** Earthy red driver for primary action item highlights.
-- **Neutral (#F7F5F2):** Warm limestone layer foundational for all page backgrounds.
+- **Primary (#1A1C1E):** headlines and core text.
+- **Neutral (#F7F5F2):** page backgrounds.
 
 ## Typography
 
-Leverages Public Sans across clean geometric line heights.
-
-- **Headlines:** Set in Bold variants to maximize visual importance.
-- **Body:** Regular variants utilizing a clean 1.6 multiplier to ensure structural readability.
+Public Sans; body copy at 1.6 line-height for readability.
 
 ## Layout
 
-The layout uses a strict 8px spacing scale framework to manage padding, structural alignment, and gutter parameters.
+8px spacing scale for padding, alignment, and gutters.
 
 ## Elevation & Depth
 
-Depth is conveyed using clean tonal background shifting and solid contrast borders rather than explicit shadows.
+Tonal background shifts and contrast borders, not shadows.
 
 ## Shapes
 
-Components leverage minimal 4px edge roundness to establish an intentional, structural layout rhythm.
+4px edge roundness throughout.
 
 ## Components
 
 ### Buttons
 
-Primary call-to-actions adapt full background fills inherited from structural token pairs.
+Primary CTA uses a full background fill from `{colors.primary}`.
 
 ## Do's and Don'ts
 
-- Do maintain WCAG AA contrast ratios (4.5:1 for standard body text variations).
-- Do use the primary highlight exclusively for major user actions.
-- Don't mix sharp elements and organic heavy corner behaviors within a single screen.
+- Do maintain WCAG AA contrast (4.5:1 body text).
+- Don't mix sharp and organic corner styles on one screen.
 ```
