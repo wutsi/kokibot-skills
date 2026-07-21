@@ -1,8 +1,8 @@
 ---
 name: markitdown
 description: |
-    Converts documents to Markdown so that an LLM can understand the content easily.
-    It supports PDF, Word, PowerPoint, Excel, images (OCR), audio (transcription), HTML,  YouTube transcripts and Images (using OCR).
+    Use when a user asks to convert, extract text from, or read the content of a PDF, Word/PowerPoint/Excel file,
+    image (OCR), audio file (transcription), HTML page, URL, or YouTube video into Markdown.
 metadata:
     categories:
         - core
@@ -59,7 +59,23 @@ markitdown "https://www.youtube.com/watch?v=GsvvrTYS3ak" -o transcript.md
 
 # Convert URL
 markitdown "https://example.com/docs" -o docs.md
+
+# Convert audio (transcription)
+markitdown recording.mp3 -o transcript.md
+
+# Convert an eBook
+markitdown book.epub -o book.md
+
+# Convert a zip archive of mixed documents (converts each file inside)
+markitdown archive.zip -o archive.md
 ```
+
+### Quick Reference
+
+| Input                                             | Command                              |
+|---------------------------------------------------|--------------------------------------|
+| PDF, Office, HTML, URL, YouTube, audio, epub, zip | `markitdown <input> -o <output>.md`  |
+| Images (`.jpg`, `.jpeg`, `.png`, `.tiff`)         | `python3 scripts/convert.py <input>` |
 
 ### Image
 
@@ -68,7 +84,7 @@ For images, use the script `scripts/convert.py` which applies OCR for images.
 Use the following command:
 
 ```bash
-python3 scripts/convert.py <inpu>
+python3 scripts/convert.py <input>
 ```
 
 The extracted markdown will be printed to the console.
@@ -93,4 +109,13 @@ pipx install --include-deps pytesseract
 pipx install --include-deps opencv-python
 pipx install --include-deps numpy
 ```
+
+---
+
+## Common Mistakes
+
+- Using the `markitdown` CLI directly on images instead of `scripts/convert.py` — the CLI does not apply OCR, so image
+  text extraction will silently fail or return nothing.
+- Forgetting the OCR system dependencies (`tesseract`, `opencv`) — `scripts/convert.py` will raise an import or
+  runtime error without them.
 
