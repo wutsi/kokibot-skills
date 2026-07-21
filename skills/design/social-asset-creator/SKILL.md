@@ -91,8 +91,10 @@ file doesn't exist, halt and tell the user to run `design-md-creator` first.
 
 **Step 2 — Stage backgrounds:** generate an asset ID `asset_[YYYYMMDDHHMMSS]` (current UTC, e.g. `date -u
 +%Y%m%d%H%M%S`) and its output dir `[home-directory]/workspace/output/asset_[UniqueId]/`. For each slide with a
-background image path, run `scripts/stage_background.sh` to download/copy it into that dir. Use the script's
-printed local path (not the original URL/path) in Step 3.
+background image path, run `scripts/stage_background.sh` to download/copy it into that dir. The script prints the
+staged file's absolute path, but Step 3 must reference it by its **filename only** (e.g. `bg_slide_0.jpg`), not the
+absolute path or a `file://` URL — `playwright-cli` does not render images given with a `file://` prefix, so the
+background image must be loaded via a relative path from the HTML file, which lives in the same directory.
 
 ```bash
 scripts/stage_background.sh "[path-or-url]" "[home-directory]/workspace/output/asset_[UniqueId]" [slide-index]
@@ -100,7 +102,9 @@ scripts/stage_background.sh "[path-or-url]" "[home-directory]/workspace/output/a
 
 **Step 3 — Generate HTML:** for each slide, write a self-contained HTML file
 (`[home-directory]/workspace/output/asset_[UniqueId]/temp_slide_N.html`) with the platform dimensions, background
-style, and injected copy (hook, headline, subHead, cta):
+style, and injected copy (hook, headline, subHead, cta). Reference the background image by its relative filename
+(the basename of the path staged in Step 2), since the HTML file and the image sit side by side in the same asset
+directory:
 
 ```html
 <!DOCTYPE html>
@@ -112,7 +116,7 @@ style, and injected copy (hook, headline, subHead, cta):
     </style>
 </head>
 <body>
-<div class="slide" style="background-image: url('[background-image-path]');....">
+<div class="slide" style="background-image: url('[background-image-filename]');....">
     <div class="overlay">
         <div class="hook">[hook]</div>
         <div class="headline">[headline]</div>
