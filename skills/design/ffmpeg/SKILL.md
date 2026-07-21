@@ -1,6 +1,9 @@
 ---
 name: ffmpeg
 description: Use when the user asks to convert, compress, resize, trim, merge, or concatenate video/audio files, create GIFs from video, extract audio or subtitles, generate thumbnails, or prepare video for YouTube/Instagram/TikTok/Twitter.
+metadata:
+    categories:
+        - design
 ---
 
 # ffmpeg Usage
