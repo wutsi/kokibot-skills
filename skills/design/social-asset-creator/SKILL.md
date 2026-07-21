@@ -6,177 +6,101 @@ metadata:
         - design
 ---
 
-# Skill Instruction: Social Media Post & Carousel Image Generation
+# Social Media Post & Carousel Image Generation
 
 ## Overview
 
-This skill automates the creation of high-quality, platform-specific social media post images and multi-slide carousels.
-By reading a central design system, staging provided background images into the local execution workspace, injecting
-user-provided copy into HTML slide configurations based on platform specifications, and executing the renders via the
-**Playwright CLI (`playwright-cli`)**, this skill outputs a plain-text list containing the absolute full file system
-paths of all
-generated visual assets.
+Generates high-quality, platform-specific social post images and multi-slide carousels: reads the central design
+system, stages background images into the local workspace, injects copy into per-platform HTML slide templates, and
+renders via the **Playwright CLI (`playwright-cli`)**. Prints a plain-text list of absolute file paths to all
+generated assets on `stdout` — downstream scripts must parse `stdout` to locate the rendered files.
 
----
+## When to Use
 
-## Output Contract & Location Reporting
-
-The primary deliverable of this skill is a plain-text summary listing the absolute full paths to all rendered image
-assets.
-
-Downstream agent scripts and platform wrappers must parse `stdout` for the printed file path location to locate,
-inspect, or dispatch the rendered files.
-
----
-
-## When to Use This Skill
-
-Trigger this skill whenever you need to generate high-fidelity, text-on-image marketing assets or multi-page swipeable
-carousels programmatically while preserving strict brand identity across our supported social channels.
-
-* **Multi-Platform Visual Distribution:** When the same copy and background asset need to be adapted perfectly into
-  multiple aspect ratios simultaneously without manual cropping.
-* **Multi-Slide Carousel Content:** For multi-page visual essays, step-by-step tutorials, slide decks, or episodic
-  promotional cards (specifically for LinkedIn Document posts or Instagram Carousels).
-* **Brand Asset Compliance Protection:** When rendering graphics at scale where traditional generative AI image
-  generation models fail due to layout hallucination, misspelled text overlays, or non-compliant font usage.
-
----
+* Adapting the same copy/background into multiple platform aspect ratios at once (no manual cropping).
+* Multi-slide carousels: tutorials, slide decks, episodic promo cards (LinkedIn Document posts, Instagram Carousels).
+* Rendering brand-compliant graphics at scale where generative image models fail (layout hallucination, misspelled
+  text, wrong fonts).
 
 ## Input Parameters
 
-| Parameter                    | Type   | Required? | Allowed Values / Description                                                                                     |
-|:-----------------------------|:-------|:----------|:-----------------------------------------------------------------------------------------------------------------|
-| **Target platform**          | String | **Yes**   | `facebook` \| `instagram` \| `whatsapp` \| `tiktok` \| `linkedin` \| `youtube`                                   |
-| **Placement type**           | String | **Yes**   | `feed` \| `story` \| `reel_cover` \| `link_preview` \| `carousel_slide` \| `community_post` \| `video_thumbnail` |
-| **Slides Data**              | Array  | **Yes**   | An array of objects containing content for each slide. Supports single-item arrays for static posts.             |
-| *↳ Hook*                     | String | **Yes**   | The primary attention-grabbing text (e.g., "Stop Scrolling!"). Required for at least Slide 1.                    |
-| *↳ Headline*                 | String | No        | The main title or value proposition of the specific slide.                                                       |
-| *↳ Sub Head*                 | String | No        | Supporting text or secondary details providing context for the specific slide.                                   |
-| *↳ CTA*                      | String | No        | Call To Action text (typically reserved for the final slide).                                                    |
-| *↳ Path to background image* | String | No        | Local relative/absolute path (e.g., `./images/bg.png`) or remote web URL to the background image asset.          |
+| Parameter               | Type   | Required | Values / Description                                                                                             |
+|:------------------------|:-------|:---------|:-----------------------------------------------------------------------------------------------------------------|
+| Target platform         | String | Yes      | `facebook` \| `instagram` \| `whatsapp` \| `tiktok` \| `linkedin` \| `youtube`                                   |
+| Placement type          | String | Yes      | `feed` \| `story` \| `reel_cover` \| `link_preview` \| `carousel_slide` \| `community_post` \| `video_thumbnail` |
+| Slides Data             | Array  | Yes      | Objects with content per slide. Single-item array = static post.                                                 |
+| ↳ Hook                  | String | Yes*     | Primary attention-grabbing text (e.g. "Stop Scrolling!"). Required on Slide 1.                                   |
+| ↳ Headline              | String | No       | Main title / value proposition.                                                                                  |
+| ↳ Sub Head              | String | No       | Supporting/secondary text.                                                                                       |
+| ↳ CTA                   | String | No       | Call-to-action text (usually final slide only).                                                                  |
+| ↳ Background image path | String | No       | Local path or remote URL for the slide background.                                                               |
 
----
+**Validation:** an invalid platform/placement combo (e.g. TikTok `link_preview`) falls back to that platform's `feed`
+spec. Multiple slides passed to a non-carousel placement fall back to a single static image using only slide 1.
 
-## Validation & Conflict Resolution
+## Platform Specifications
 
-Before building the asset structure, cross-reference the `Target platform` and `Placement type` with the specifications
-matrix below.
+> **Safe zone:** for `story` and `reel_cover`, center text/critical assets within the inner 1080 x 1350 px area to
+> avoid native app UI overlays.
 
-* If a requested combination is **invalid** (e.g., TikTok `link_preview`), default to the `feed` specification for that
-  platform.
-* If multiple items are passed into the **Slides Data** array for a placement that does not support carousels, default
-  to generating a single static image using *only* the first data object in the array.
+| Platform  | Placement                      | Dimensions  | Ratio  | Notes                            |
+|:----------|:-------------------------------|:------------|:-------|:---------------------------------|
+| Instagram | feed (portrait/carousel)       | 1080 x 1350 | 4:5    | Recommended for carousels        |
+| Instagram | feed (square/carousel)         | 1080 x 1080 | 1:1    |                                  |
+| Instagram | story / reel_cover             | 1080 x 1920 | 9:16   |                                  |
+| Facebook  | feed (portrait/carousel)       | 1080 x 1350 | 4:5    |                                  |
+| Facebook  | feed (square/carousel)         | 1080 x 1080 | 1:1    |                                  |
+| Facebook  | link_preview                   | 1200 x 630  | 1.91:1 |                                  |
+| Facebook  | story                          | 1080 x 1920 | 9:16   |                                  |
+| TikTok    | feed / reel_cover              | 1080 x 1920 | 9:16   |                                  |
+| WhatsApp  | feed                           | 1080 x 1080 | 1:1    |                                  |
+| WhatsApp  | story                          | 1080 x 1920 | 9:16   |                                  |
+| LinkedIn  | feed (portrait/text post)      | 1080 x 1350 | 4:5    |                                  |
+| LinkedIn  | carousel_slide (document post) | 1080 x 1080 | 1:1    | Standard square, multi-page docs |
+| LinkedIn  | link_preview                   | 1200 x 628  | 1.91:1 |                                  |
+| YouTube   | video_thumbnail                | 1280 x 720  | 16:9   |                                  |
+| YouTube   | community_post                 | 1080 x 1080 | 1:1    |                                  |
+| YouTube   | reel_cover                     | 1080 x 1920 | 9:16   |                                  |
 
----
+## Typography Scale
 
-## Social Media Post Specifications
+Baseline canvas height: **1350px**. For lower target resolutions (e.g. 720p thumbnail), scale all pixel values by
+`Target Height / 1350`. Use `vw`/`vh` or fixed px; document sizing is forbidden.
 
-The container bounds and dimensions must be dynamically determined using the matrix below.
-
-> **Important (Safe Zones):** For all vertical video formats (`story` and `reel_cover`), the template must center text
-> and critical visual assets within the inner 1080 x 1350 px area. This ensures vital information isn't blocked by
-> native
-> social media app UI elements.
-
-### 1. Instagram (`instagram`)
-
-* **`feed` (Portrait / Carousel):** 1080 x 1350 px (4:5 aspect ratio) — *Recommended for Carousels*
-* **`feed` (Square / Carousel):** 1080 x 1080 px (1:1 aspect ratio)
-* **`story` / `reel_cover`:** 1080 x 1920 px (9:16 aspect ratio)
-
-### 2. Facebook (`facebook`)
-
-* **`feed` (Portrait / Carousel):** 1080 x 1350 px (4:5 aspect ratio)
-* **`feed` (Square / Carousel):** 1080 x 1080 px (1:1 aspect ratio)
-* **`link_preview`:** 1200 x 630 px (1.91:1 landscape aspect ratio)
-* **`story`:** 1080 x 1920 px (9:16 aspect ratio)
-
-### 3. TikTok (`tiktok`)
-
-* **`feed` / `reel_cover`:** 1080 x 1920 px (9:16 aspect ratio)
-
-### 4. WhatsApp (`whatsapp`)
-
-* **`feed`:** 1080 x 1080 px (1:1 aspect ratio)
-* **`story`:** 1080 x 1920 px (9:16 aspect ratio)
-
-### 5. LinkedIn (`linkedin`)
-
-* **`feed` (Portrait / Text Post):** 1080 x 1350 px (4:5 aspect ratio)
-* **`carousel_slide` (Document Post):** 1080 x 1080 px (1:1 aspect ratio) — *Standard square for multi-page slide
-  documents*
-* **`link_preview`:** 1200 x 628 px (1.91:1 landscape aspect ratio)
-
-### 6. YouTube (`youtube`)
-
-* **`video_thumbnail`:** 1280 x 720 px (16:9 aspect ratio)
-* **`community_post`:** 1080 x 1080 px (1:1 aspect ratio)
-* **`reel_cover`:** 1080 x 1920 px (9:16 aspect ratio)
-
----
-
-## Typography & Font Scale Guidelines
-
-To stand out on small mobile feeds, typography must be aggressively scaled, hyper-legible, and weighted. Traditional
-document sizes are strictly forbidden. Use the following baseline hierarchy, adjusting via fluid CSS `vw`/`vh` units or
-specific target pixels based on a baseline canvas height of **1350px**:
-
-* **Hook (Pattern Interrupter):** **`72px - 96px`** (`font-weight: 800` or `900`). Must be highly stylized, uppercase,
-  or use high-contrast background badges to visually anchor attention instantly.
-* **Headline (Core Value Prop):** **`64px - 80px`** (`font-weight: 700`). Clear, bold, and heavily structured.
-* **Sub Head (Supporting Detail):** **`36px - 48px`** (`font-weight: 500` or `400`). Sized layout-defensively to handle
-  up to 2-3 lines of explanatory copy.
-* **CTA (Call to Action Button):** **`32px - 40px`** (`font-weight: 700`). Housed inside a defined, pill-shaped or
-  rounded button layout with generous padding (`24px 48px`).
-
-> **Scale Factor Note:** If the target resolution is scaled lower (e.g., a 720p YouTube Thumbnail), scale all absolute
-> pixel ranges down proportionally using a multiplier (`Target Height / 1350`) to keep the visual layout balance.
-
----
+| Element  | Size    | Weight    | Notes                                                             |
+|:---------|:--------|:----------|:------------------------------------------------------------------|
+| Hook     | 72–96px | 800 / 900 | Uppercase or high-contrast badge; must anchor attention instantly |
+| Headline | 64–80px | 700       | Bold, clearly structured                                          |
+| Sub Head | 36–48px | 500 / 400 | Sized to handle up to 2–3 lines                                   |
+| CTA      | 32–40px | 700       | Pill/rounded button, padding `24px 48px`                          |
 
 ## Execution Protocol
 
-Execute these actions in strict sequential order. Do not loop or re-draft code once generated.
+Run these steps in strict sequential order. Do not loop or re-draft generated code.
 
-### Step 0: Environment Pre-Check (Dependency Validation)
-
-Before generating templates or staging assets, run `scripts/check_env.sh`. It verifies `playwright-cli` is installed
-and accessible, halting execution with an explicit error if the binary is missing.
+**Step 0 — Environment check:** run `scripts/check_env.sh`. Halts with an explicit error if `playwright-cli` is
+missing.
 
 ```bash
 scripts/check_env.sh
 ```
 
-### Step 1: Read Design System
+**Step 1 — Read design system:** read `[home-directory]/DESIGN.md` (YAML frontmatter + Markdown body, per the
+`design-md-creator` skill's contract). Extract `typography`, `colors`, and `spacing` from the frontmatter. If the
+file doesn't exist, halt and tell the user to run `design-md-creator` first.
 
-* Read `[home-directory]/DESIGN.md` (YAML frontmatter + Markdown body, per the `design-md-creator` skill's contract).
-* Extract authorized brand assets from the YAML frontmatter: `typography` (font families, weights), `colors`
-  (primary/secondary/tertiary/neutral), and `spacing` (global padding rules).
-* If `DESIGN.md` does not exist, halt execution and print an explicit error asking the user to run the
-  `design-md-creator` skill first.
-
-### Step 2: Stage Background Images
-
-Generate a unique asset ID as `asset_[YYYYMMDDHHMMSS]`, using the current UTC timestamp from the system clock (e.g.
-`date -u +%Y%m%d%H%M%S`), and create its output directory: `[home-directory]/workspace/output/asset_[UniqueId]/`.
-
-For each slide with a *Path to background image*, run `scripts/stage_background.sh` to download (if remote) or copy
-(if local) it into the asset directory, preserving its original file extension. The script prints the resulting
-absolute local path — reference that path (not the original remote URL or path) when building the HTML in Step 3.
+**Step 2 — Stage backgrounds:** generate an asset ID `asset_[YYYYMMDDHHMMSS]` (current UTC, e.g. `date -u
++%Y%m%d%H%M%S`) and its output dir `[home-directory]/workspace/output/asset_[UniqueId]/`. For each slide with a
+background image path, run `scripts/stage_background.sh` to download/copy it into that dir. Use the script's
+printed local path (not the original URL/path) in Step 3.
 
 ```bash
 scripts/stage_background.sh "[path-or-url]" "[home-directory]/workspace/output/asset_[UniqueId]" [slide-index]
 ```
 
-### Step 3: Generate the HTML
-
-For each slide in the slides data array, generate a self-contained HTML file (
-`[home-directory]/workspace/output/asset_[UniqueId]/temp_slide_N.html`)
-incorporating the required platform dimensions, background styles, and injected text content (hook, headline, subHead,
-cta).
-
-The HTML structure for each slide should follow this template:
+**Step 3 — Generate HTML:** for each slide, write a self-contained HTML file
+(`[home-directory]/workspace/output/asset_[UniqueId]/temp_slide_N.html`) with the platform dimensions, background
+style, and injected copy (hook, headline, subHead, cta):
 
 ```html
 <!DOCTYPE html>
@@ -200,11 +124,9 @@ The HTML structure for each slide should follow this template:
 </html>
 ```
 
-### Step 4: Output Execution Payload & Return Asset Location
-
-Run `scripts/render_assets.sh` once. It renders every `temp_slide_N.html` in the asset directory to `slide_N.png` at
-the target platform dimensions (via `playwright-cli open → resize → screenshot → close`, one cycle per slide) and
-prints the required plain-text summary of absolute full asset paths to stdout.
+**Step 4 — Render & report:** run `scripts/render_assets.sh` once. It renders every `temp_slide_N.html` to
+`slide_N.png` at the target dimensions (`playwright-cli open → resize → screenshot → close` per slide) and prints
+the plain-text list of absolute asset paths to stdout.
 
 ```bash
 scripts/render_assets.sh "[home-directory]/workspace/output/asset_[UniqueId]" [Insert Evaluated Width] [Insert Evaluated Height]
